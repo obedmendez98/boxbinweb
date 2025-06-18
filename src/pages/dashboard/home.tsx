@@ -490,26 +490,9 @@ export default function HomeScreen() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">Dashboard</h1>
               <p className="text-slate-600">Manage your inventory bins and locations</p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => navigate('/add-bin')}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Bin
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/add-location')}
-                className="border-slate-200 hover:bg-slate-50"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Location
-              </Button>
-            </div>
+          
           </div>
 
           {/* Stats cards */}
@@ -556,19 +539,6 @@ export default function HomeScreen() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-white/70 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-600 mb-1">Recent Activity</p>
-                    <p className="text-2xl font-bold text-slate-900">{stats.recentActivity}</p>
-                  </div>
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-orange-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
 

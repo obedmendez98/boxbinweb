@@ -1,6 +1,8 @@
+// routes/index.tsx - ACTUALIZADO
 import { useAuth } from '@/context/AuthContext';
 import LoginPage from '@/pages/auth/login';
 import HomeScreen from '@/pages/dashboard/home';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 
 // Componente para proteger rutas
@@ -8,14 +10,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { currentUser, loading } = useAuth();
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+            </div>
+        );
     }
 
     if (!currentUser) {
         return <Navigate to="/login" replace />;
     }
 
-    return <>{children}</>;
+    return <DashboardLayout>{children}</DashboardLayout>;
 };
 
 // Componente para redirigir usuarios autenticados
@@ -23,7 +29,11 @@ const RedirectIfAuthenticated = ({ children }: { children: React.ReactNode }) =>
     const { currentUser, loading } = useAuth();
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+            </div>
+        );
     }
 
     if (currentUser) {
