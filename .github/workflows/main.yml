@@ -39,7 +39,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: registry.digitalocean.com/box-bin/app:box-bin-web
+          tags: registry.digitalocean.com/dockerimages/app:box-bin-web
 
       - name: Install sshpass
         run: sudo apt-get update && sudo apt-get install -y sshpass
@@ -49,7 +49,7 @@ jobs:
           DROPLET_IP: ${{ secrets.DROPLET_IP }}
           DROPLET_USER: root
           DROPLET_PASS: ${{ secrets.DROPLET_PASSWORD }}
-          IMAGE: registry.digitalocean.com/box-bin/app:box-bin-web
+          IMAGE: registry.digitalocean.com/dockerimages/app:box-bin-web
         run: |
           sshpass -p "$DROPLET_PASS" ssh -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP << 'EOF'
             set -e
@@ -67,14 +67,14 @@ jobs:
             fi
 
             # Pull última imagen
-            docker pull registry.digitalocean.com/box-bin/app:box-bin-web
+            docker pull registry.digitalocean.com/dockerimages/app:box-bin-web
 
             # Ejecutar nuevo contenedor
             docker run -d \
               --name $CONTAINER_NAME \
               -p 3000:80 \
               --restart unless-stopped \
-              registry.digitalocean.com/box-bin/app:box-bin-web
+              registry.digitalocean.com/dockerimages/app:box-bin-web
 
             # Conectar el contenedor a la red hatch-network
             # docker network connect hatch-network box-bin-web
