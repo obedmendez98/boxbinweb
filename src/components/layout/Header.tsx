@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { logoutUser } from "@/lib/firebase";
 
 export function Header() {
   const { currentUser } = useAuth();
@@ -18,7 +19,7 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      //await logout();
+      await logoutUser()
       navigate('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);

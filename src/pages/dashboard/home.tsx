@@ -24,6 +24,7 @@ import {
 import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -101,7 +102,7 @@ export default function HomeScreen() {
   const [filterLocation, setFilterLocation] = useState<Location | null>(null);
 
   // User context (simplified for this example)
-  const currentUser = { uid: 'current-user-id' }; // Replace with actual user context
+  const { currentUser } = useAuth();
 
   const normalizeText = (text: any) =>
     (text || '')
@@ -120,7 +121,7 @@ export default function HomeScreen() {
     try {
       let binsQuery = query(
         collection(db, 'bins'),
-        where('userId', '==', "kHgfOPyF0GRCb8VIq2twFO9634s1"),
+        where('userId', '==', currentUser?.uid),
         orderBy('createdAt', 'desc'),
         limit(ITEMS_PER_PAGE)
       );
@@ -128,7 +129,7 @@ export default function HomeScreen() {
       if (isNextPage && binsPagination.lastVisible) {
         binsQuery = query(
           collection(db, 'bins'),
-          where('userId', '==', "kHgfOPyF0GRCb8VIq2twFO9634s1"),
+          where('userId', '==', currentUser?.uid),
           orderBy('createdAt', 'desc'),
           startAfter(binsPagination.lastVisible),
           limit(ITEMS_PER_PAGE)
@@ -137,7 +138,7 @@ export default function HomeScreen() {
         // For previous page, we need to reverse the order and take the previous documents
         binsQuery = query(
           collection(db, 'bins'),
-          where('userId', '==', "kHgfOPyF0GRCb8VIq2twFO9634s1"),
+          where('userId', '==', currentUser?.uid),
           orderBy('createdAt', 'desc'),
           limit(ITEMS_PER_PAGE)
         );
@@ -284,26 +285,9 @@ export default function HomeScreen() {
     }
   }, [activeTab]);
 
-  /*const handleNextPage = () => {
-    if (activeTab === 'bins' && binsPagination.hasNextPage) {
-      fetchBins(binsPagination.currentPage + 1, searchTextBins, true);
-    } else if (activeTab === 'locations' && locationsPagination.hasNextPage) {
-      fetchLocations(locationsPagination.currentPage + 1, searchTextLocations, true);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (activeTab === 'bins' && binsPagination.hasPreviousPage) {
-      fetchBins(binsPagination.currentPage - 1, searchTextBins, false, true);
-    } else if (activeTab === 'locations' && locationsPagination.hasPreviousPage) {
-      fetchLocations(locationsPagination.currentPage - 1, searchTextLocations);
-    }
-  };*/
-
   const handleLocationFilter = (location: Location) => {
     setActiveTab('bins');
     setFilterLocation(location);
-    // Filter bins by location
     const filteredBinsByLocation = bins.filter(bin => 
       bin.location && bin.location.id === location.id
     );
@@ -457,17 +441,52 @@ export default function HomeScreen() {
     </div>
   );
 
+  const [stats, setStats] = useState({
+    totalBins: 0,
+    totalLocations: 0,
+    totalItems: 0,
+    recentActivity: 0
+  });
+
+  const fetchStats = async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const binsSnapshot = await getDocs(
+        query(collection(db, 'bins'), where('userId', '==', currentUser.uid))
+      );
+      const binsData = binsSnapshot.docs.map((doc) => doc.data());
+
+      const totalBins = binsData.length;
+      const totalItems = binsData.reduce((sum, bin) => sum + (bin.itemCount || 0), 0);
+
+      const locationsSnapshot = await getDocs(
+        query(collection(db, 'locations'), where('userId', '==', currentUser.uid))
+      );
+      const totalLocations = locationsSnapshot.size;
+
+      setStats({
+        totalBins,
+        totalLocations,
+        totalItems,
+        recentActivity: 0 // puedes calcular esto con otra lógica si gustas
+      });
+
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   //const currentPagination = activeTab === 'bins' ? binsPagination : locationsPagination;
   const currentData = activeTab === 'bins' ? filteredBins : filteredLocations;
   const currentSearchText = activeTab === 'bins' ? searchTextBins : searchTextLocations;
   const setCurrentSearchText = activeTab === 'bins' ? setSearchTextBins : setSearchTextLocations;
 
-    const stats = {
-      totalBins: 4,
-      totalLocations: 40,
-      totalItems: 5,
-      recentActivity: 5
-    };
   if (loading && currentData.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50">

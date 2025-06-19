@@ -12,6 +12,9 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { logoutUser } from "@/lib/firebase";
+import LogoIcon from "@/assets/logo.png";
+
 
 interface SidebarProps {
   className?: string;
@@ -33,7 +36,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   const handleLogout = async () => {
     try {
-      //await logout();
+      await logoutUser()
       navigate('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
@@ -47,19 +50,26 @@ export function Sidebar({ className }: SidebarProps) {
       className
     )}>
       {/* Header del Sidebar */}
-      <div className="flex h-14 items-center justify-between px-4 border-b">
-        {!collapsed && (
-          <h2 className="text-lg font-semibold">Box Bin</h2>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8 p-0"
-        >
-          {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-        </Button>
-      </div>
+<div className="relative flex h-20 items-center justify-end px-4 border-b">
+  {!collapsed && (
+    
+    <img
+      src={LogoIcon}
+      alt="Logo"
+      className="absolute left-1/2 -translate-x-1/2 w-15 h-15"
+    />
+  )}
+
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={() => setCollapsed(!collapsed)}
+    className="h-8 w-8 p-0"
+  >
+    {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+  </Button>
+</div>
+
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
