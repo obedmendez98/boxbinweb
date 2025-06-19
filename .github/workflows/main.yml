@@ -1,0 +1,81 @@
+name: Deploy React/Vite Docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU (for multi-arch) and Docker Buildx
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to DigitalOcean Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: registry.digitalocean.com
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: registry.digitalocean.com/box-bin/app:box-bin-web
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Deploy to Droplet via SSH
+        env:
+          DROPLET_IP: ${{ secrets.DROPLET_IP }}
+          DROPLET_USER: root
+          DROPLET_PASS: ${{ secrets.DROPLET_PASSWORD }}
+          IMAGE: registry.digitalocean.com/box-bin/app:box-bin-web
+        run: |
+          sshpass -p "$DROPLET_PASS" ssh -o StrictHostKeyChecking=no $DROPLET_USER@$DROPLET_IP << 'EOF'
+            set -e
+
+            # Variables
+            CONTAINER_NAME=box-bin-web
+            IMAGE=$IMAGE
+
+            # Parar y eliminar contenedor anterior (si existe)
+            if [ "$(docker ps -q -f name=box-bin-web)" ]; then
+              docker stop box-bin-web
+            fi
+            if [ "$(docker ps -aq -f status=exited -f name=box-bin-web)" ]; then
+              docker rm box-bin-web
+            fi
+
+            # Pull última imagen
+            docker pull registry.digitalocean.com/box-bin/app:box-bin-web
+
+            # Ejecutar nuevo contenedor
+            docker run -d \
+              --name $CONTAINER_NAME \
+              -p 3000:80 \
+              --restart unless-stopped \
+              registry.digitalocean.com/box-bin/app:box-bin-web
+
+            # Conectar el contenedor a la red hatch-network
+            # docker network connect hatch-network box-bin-web
+
+            echo "✅ Despliegue completado"
+
+            # Verificar que el contenedor está corriendo
+            docker ps | grep $CONTAINER_NAME
+            # Esperar a que el servicio esté disponible
+            #sleep 10
+            #curl -s http://localhost:3000 > /dev/null && echo "✅ Servicio disponible"
+          EOF
