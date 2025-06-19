@@ -76,8 +76,8 @@ jobs:
               --restart unless-stopped \
               registry.digitalocean.com/dockerimages/app:box-bin-web
 
-            # Conectar el contenedor a la red hatch-network
-            # docker network connect hatch-network box-bin-web
+            # Conectar el contenedor a la red nginxproxymanager_default
+            docker network connect nginxproxymanager_default box-bin-web
 
             echo "✅ Despliegue completado"
 

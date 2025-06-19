@@ -489,7 +489,7 @@ export default function HomeScreen() {
 
   if (loading && currentData.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50">
+      <div className="min-h-screen">
         <div className="container mx-auto px-6 py-8">
           <div className="flex justify-center items-center min-h-96">
             <div className="flex flex-col items-center gap-4">
