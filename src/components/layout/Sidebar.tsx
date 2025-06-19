@@ -50,26 +50,25 @@ export function Sidebar({ className }: SidebarProps) {
       className
     )}>
       {/* Header del Sidebar */}
-<div className="relative flex h-20 items-center justify-end px-4 border-b">
-  {!collapsed && (
-    
-    <img
-      src={LogoIcon}
-      alt="Logo"
-      className="absolute left-1/2 -translate-x-1/2 w-15 h-15"
-    />
-  )}
+      <div className="relative flex h-20 items-center justify-end px-4 border-b">
+        {!collapsed && (
+          
+          <img
+            src={LogoIcon}
+            alt="Logo"
+            className="absolute left-1/2 -translate-x-1/2 w-15 h-15"
+          />
+        )}
 
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={() => setCollapsed(!collapsed)}
-    className="h-8 w-8 p-0"
-  >
-    {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-  </Button>
-</div>
-
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCollapsed(!collapsed)}
+          className="h-8 w-8 p-0"
+        >
+          {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+        </Button>
+      </div>
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
