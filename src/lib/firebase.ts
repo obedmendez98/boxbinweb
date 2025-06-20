@@ -6,13 +6,13 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, si
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyChv_-BTOwEfoPqbKV01JbPLPgY_sNKEdA",
-    authDomain: "binventory-ea555.firebaseapp.com",
-    projectId: "binventory-ea555",
-    storageBucket: "binventory-ea555.firebasestorage.app",
-    messagingSenderId: "517078681100",
-    appId: "1:517078681100:ios:09c98577d00332be415029",
-    clientId: "517078681100-l18i2opuu1ntabg17297m784gjd23pu8.apps.googleusercontent.com"
+  apiKey: "AIzaSyA7NOsoa4KHmManZZwtqv4MM21FHtstUoo",
+  authDomain: "binventory-ea555.firebaseapp.com",
+  projectId: "binventory-ea555",
+  storageBucket: "binventory-ea555.firebasestorage.app",
+  messagingSenderId: "517078681100",
+  appId: "1:517078681100:web:20adb548cbe951c0415029",
+  measurementId: "G-V317P6CV8L"
 };
   
 // Inicializar Firebase
@@ -60,8 +60,10 @@ export const loginWithGoogle = async () => {
   
 export const loginWithApple = async () => {
     const provider = new OAuthProvider('apple.com');
+    //provider.addScope('email');
+    //provider.addScope('name');
     try {
-        const result = await signInWithPopup(auth, provider);
+        const result = await signInWithPopup (auth, provider);
         return { user: result.user, error: null };
     } catch (error: any) {
         return { user: null, error: error.message };
