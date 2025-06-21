@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -7,7 +7,9 @@ import {
   loginWithGoogle,
   loginWithApple,
   loginWithYahoo,
+  auth,
 } from '@/lib/firebase';
+import { getRedirectResult } from 'firebase/auth';
 
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState({ google: false, apple: false, yahoo: false });
@@ -29,6 +31,16 @@ const LoginPage = () => {
   
     setIsLoading(prev => ({ ...prev, [provider]: false }));
   };
+
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        console.log("✅ Redirect result:", result);
+      })
+      .catch((error) => {
+        console.error("🔥 Redirect error full object:", error);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -71,7 +83,7 @@ const LoginPage = () => {
               )}
             </Button>
 
-            {/* Apple Login */}
+            {/* Apple Login 
             <Button
               variant="outline"
               className="w-full h-12 relative"
@@ -91,7 +103,7 @@ const LoginPage = () => {
                 </>
               )}
             </Button>
-
+ */}
             {/* Yahoo Login */}
             <Button
               variant="outline"

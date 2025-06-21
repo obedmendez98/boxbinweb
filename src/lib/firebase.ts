@@ -2,7 +2,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInWithPopup,
     GoogleAuthProvider,
-    OAuthProvider } from 'firebase/auth';
+    OAuthProvider, 
+    signInWithRedirect} from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -59,15 +60,17 @@ export const loginWithGoogle = async () => {
 };
   
 export const loginWithApple = async () => {
-    const provider = new OAuthProvider('apple.com');
-    //provider.addScope('email');
-    //provider.addScope('name');
-    try {
-        const result = await signInWithPopup (auth, provider);
-        return { user: result.user, error: null };
-    } catch (error: any) {
-        return { user: null, error: error.message };
-    }
+  const auth = getAuth();
+  const provider = new OAuthProvider('apple.com');
+  provider.addScope('email');
+  provider.addScope('name');
+  
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return { user: result.user, error: null };
+  } catch (error: any) {
+    return { user: null, error: error.message };
+  }
 };
   
 export const loginWithYahoo = async () => {
