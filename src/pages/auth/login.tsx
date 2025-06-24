@@ -83,7 +83,7 @@ const LoginPage = () => {
               )}
             </Button>
 
-            {/* Apple Login 
+            {/* Apple Login */}
             <Button
               variant="outline"
               className="w-full h-12 relative"
@@ -103,7 +103,7 @@ const LoginPage = () => {
                 </>
               )}
             </Button>
- */}
+ 
             {/* Yahoo Login */}
             <Button
               variant="outline"

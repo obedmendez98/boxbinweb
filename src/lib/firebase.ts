@@ -2,7 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInWithPopup,
     GoogleAuthProvider,
-    OAuthProvider, 
+    OAuthProvider,
     } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -12,8 +12,8 @@ const firebaseConfig = {
   projectId: "binventory-ea555",
   storageBucket: "binventory-ea555.firebasestorage.app",
   messagingSenderId: "517078681100",
-  appId: "1:517078681100:web:20adb548cbe951c0415029",
-  measurementId: "G-V317P6CV8L"
+  appId: "1:517078681100:web:f5f3771a365a2ab8415029",
+  measurementId: "G-K37ZCMT9CN"
 };
   
 // Inicializar Firebase
