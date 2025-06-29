@@ -4,6 +4,7 @@ import LoginPage from '@/pages/auth/login';
 import HomeScreen from '@/pages/dashboard/home';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import BinDetailsPage from '@/pages/dashboard/binDetail';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -61,6 +62,14 @@ const router = createBrowserRouter([
         element: (
             <ProtectedRoute>
                 <HomeScreen />
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: '/bin-details/:id',
+        element: (
+            <ProtectedRoute>
+                <BinDetailsPage />
             </ProtectedRoute>
         ),
     },
