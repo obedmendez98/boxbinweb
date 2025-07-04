@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
   LogOut,
+  MapPin,
   Menu,
   X,
 } from "lucide-react";
@@ -25,6 +26,11 @@ const sidebarItems = [
     title: "Home",
     href: "/home",
     icon: Home,
+  },
+  {
+    title: "Locations",
+    href: "/locations",
+    icon: MapPin,
   },
 ];
 

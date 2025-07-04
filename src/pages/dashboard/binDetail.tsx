@@ -10,6 +10,8 @@ import {
   Package,
   ImageIcon,
   X,
+  Minus,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -19,8 +21,46 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
-interface BinDetails {
+export const uploadImage = async (file: File): Promise<string> => {
+  const storage = getStorage();
+  const storageRef = ref(storage, `items/${Date.now()}-${file.name}`);
+  const snapshot = await uploadBytes(storageRef, file);
+  return await getDownloadURL(snapshot.ref);
+};
+
+const extractStoragePath = (url: string | null): string | null => {
+    if (!url) return null;
+  
+    // 1. Si ya es un path válido (sin dominios ni tokens)
+    if (!url.includes('http') && !url.startsWith('gs://')) {
+      return url;
+    }
+  
+    // 2. Si es una URL pública de Firebase Storage
+    if (url.includes('firebasestorage.googleapis.com')) {
+      const match = decodeURIComponent(url).match(/\/o\/(.*?)\?/);
+      return match?.[1] || null;
+    }
+  
+    // 3. Si es una URL gs://bucket/path
+    if (url.startsWith('gs://')) {
+      const parts = url.replace('gs://', '').split('/');
+      parts.shift(); // remove bucket name
+      return parts.join('/');
+    }
+  
+    // Si no coincide con ningún formato conocido
+    return null;
+};  
+
+// types.ts
+export interface BinDetails {
   id: string;
   name: string;
   description: string;
@@ -28,11 +68,14 @@ interface BinDetails {
   createdAt: string;
   location?: {
     name: string;
-    coordinates?: { lat: number; lng: number };
+    coordinates: {
+      lat: number;
+      lng: number;
+    };
   };
 }
 
-interface Item {
+export interface Item {
   id: string;
   name: string;
   description: string;
@@ -40,11 +83,14 @@ interface Item {
   createdAt: string;
   binId: string;
   imageUrl?: string;
+  cuantity: string;
+  value: string;
 }
 
 const BinDetailsScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+   const { currentUser } = useAuth();
   
   // States
   const [bin, setBin] = useState<BinDetails | null>(null);
@@ -54,9 +100,13 @@ const BinDetailsScreen: React.FC = () => {
   const [isEditBinOpen, setIsEditBinOpen] = useState(false);
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
   
+  const incrementQuantity = () => setItemCuantity((prev: any) => prev + 1);
+  const decrementQuantity = () => setItemCuantity((prev: any) => Math.max(0, prev - 1));
   // Form states
   const [itemName, setItemName] = useState('');
   const [itemDescription, setItemDescription] = useState('');
+  const [itemCuantity, setItemCuantity] = useState<number>(0);
+  const [itemValue, setItemValue] = useState<any>('');
   const [itemTags, setItemTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -67,46 +117,48 @@ const BinDetailsScreen: React.FC = () => {
   const [binDescription, setBinDescription] = useState('');
   const [binAddress, setBinAddress] = useState('');
 
-  // Mock data for development
+  const [error, setError] = useState('');
+
   useEffect(() => {
-    const mockBin: BinDetails = {
-      id: id || '1',
-      name: 'Living Room Storage',
-      description: 'Main storage bin for living room items and electronics',
-      address: '123 Main Street, City Center',
-      createdAt: '2024-01-15T10:30:00Z',
-      location: {
-        name: 'Living Room',
-        coordinates: { lat: 40.7128, lng: -74.0060 }
+    console.log(error);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const binDocRef = doc(db, 'bins', id!);
+        const binSnap = await getDoc(binDocRef);
+
+        if (!binSnap.exists()) {
+          setError('Bin not found');
+          setLoading(false);
+          return;
+        }
+
+        const binData = binSnap.data() as Omit<BinDetails, 'id'>;
+        setBin({ id: binSnap.id, ...binData });
+
+        const itemsQuery = query(
+          collection(db, 'items'),
+          where('binId', '==', id)
+        );
+        const itemsSnap = await getDocs(itemsQuery);
+
+        const itemsData = itemsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Item[];
+
+        setItems(itemsData);
+      } catch (err) {
+        console.error('Error fetching bin data:', err);
+        setError('Error fetching bin data');
+      } finally {
+        setLoading(false);
       }
     };
 
-    const mockItems: Item[] = [
-      {
-        id: '1',
-        name: 'Wireless Headphones',
-        description: 'Sony WH-1000XM4 noise-cancelling headphones in excellent condition',
-        tags: ['electronics', 'audio', 'sony'],
-        createdAt: '2024-01-20T14:30:00Z',
-        binId: id || '1',
-        imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=200&fit=crop'
-      },
-      {
-        id: '2',
-        name: 'Coffee Table Books',
-        description: 'Collection of photography and art books',
-        tags: ['books', 'art', 'photography'],
-        createdAt: '2024-01-18T09:15:00Z',
-        binId: id || '1',
-        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop'
-      }
-    ];
-
-    setTimeout(() => {
-      setBin(mockBin);
-      setItems(mockItems);
-      setLoading(false);
-    }, 1000);
+    if (id) fetchData();
   }, [id]);
 
   const handleAddTag = () => {
@@ -120,14 +172,90 @@ const BinDetailsScreen: React.FC = () => {
     setItemTags(itemTags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleEditItem = (item: Item) => {
+  const handleEditItem = (item: any) => {
     console.log(currentItem)
+    console.log(item)
     setCurrentItem(item);
     setItemName(item.name);
     setItemDescription(item.description);
+    setItemCuantity(Number(item.cuantity));
+    setItemValue(Number(item.value));
     setItemTags(item.tags);
     setSelectedImage(item.imageUrl || null);
     setIsEditItemOpen(true);
+  };
+
+  const handleUpdateItem = async () => {
+    if (!itemName.trim()) {
+      alert("Please enter an item name");
+      return;
+    }
+
+    //setIsUploading(true);
+
+    try {
+      if (!currentItem) {
+        alert("No item selected");
+        //setIsUploading(false);
+        return;
+      }
+
+      const itemRef = doc(db, "items", currentItem.id);
+
+      // Prepara datos a actualizar
+      const updateData: Partial<Item> = {
+        name: itemName.trim(),
+        description: itemDescription.trim(),
+        tags: itemTags,
+        value: itemValue?.toString(),
+        cuantity: itemCuantity?.toString()
+      };
+
+      // Si la imagen cambió y hay una imagen anterior
+      if (selectedFile && selectedImage !== currentItem.imageUrl) {
+        if (currentItem.imageUrl) {
+          try {
+            const storage = getStorage();
+            // Extraer ruta relativa en storage para eliminar
+            const oldImagePath = extractStoragePath(currentItem?.imageUrl ?? null);
+            if (oldImagePath) {
+              const oldImageRef = ref(storage, oldImagePath);
+              await deleteObject(oldImageRef);
+              console.log('Old image deleted');
+            } else {
+              console.warn('No se pudo extraer un path válido de la URL');
+            }
+
+            console.log("Old image deleted");
+          } catch (error) {
+            console.warn("Error deleting old image", error);
+          }
+        }
+
+        // Subir nueva imagen
+        const newImageUrl = await uploadImage(selectedFile);
+        updateData.imageUrl = newImageUrl;
+      }
+
+      // Actualizar Firestore
+      await updateDoc(itemRef, updateData);
+
+      // Actualizar estado local
+      setItems((prev) =>
+        prev.map((item) => (item.id === currentItem.id ? { ...item, ...updateData } : item))
+      );
+
+      // Reset form y cerrar modal
+      resetItemForm();
+      setIsEditItemOpen(false);
+
+      alert("Item updated successfully");
+    } catch (error) {
+      console.error("Error updating item", error);
+      alert("Failed to update item");
+    } finally {
+      //setIsUploading(false);
+    }
   };
 
   const handleEditBin = () => {
@@ -147,16 +275,95 @@ const BinDetailsScreen: React.FC = () => {
     setCurrentItem(null);
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedImage(reader.result as string);
+      setSelectedFile(file);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmitItem = async () => {
+    if (!itemName.trim()) {
+      toast.error('Please enter an item name'); // o un alert nativo
+      return;
+    }
+
+    //setIsUploading(true);
+
+    try {
+      let imageUrl: string | null = null;
+
+      console.log(selectedFile, " archivo")
+      if (selectedFile) {
+        try {
+          imageUrl = await uploadImage(selectedFile);
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          const proceed = window.confirm(
+            'Image upload failed. Do you want to continue without an image?'
+          );
+          if (!proceed) {
+            //setIsUploading(false);
+            return;
+          }
+        }
+      }
+
+      await createItem(imageUrl);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('Failed to add item');
+    } finally {
+      //setIsUploading(false);
     }
   };
+
+  const createItem = async (imageUrl: string | null = null) => {
+    try {
+      const itemData = {
+        name: itemName.trim(),
+        description: itemDescription.trim(),
+        cuantity: itemCuantity?.toString()?.trim(),
+        value: itemValue?.toString()?.trim(),
+        tags: itemTags,
+        createdAt: new Date().toISOString(),
+        binId: id,
+        userId: currentUser?.uid,
+        ...(imageUrl && { imageUrl })
+      };
+
+      const docRef = await addDoc(collection(db, 'items'), itemData);
+      const newItem = { id: docRef.id, ...itemData };
+      
+      setItems((prevItems: any) => [...prevItems, newItem]);
+      setIsAddItemOpen(false);
+      resetItemForm();
+      
+      toast.success('Item added successfully'); 
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+
+  const handleUpdateBin = async () => {
+    // aquí va tu lógica de update en Firestore…
+  }
+
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    setSelectedLocation(null);
+    setIsUploading(false);
+  }, [])
 
   if (loading) {
     return (
@@ -317,6 +524,41 @@ const BinDetailsScreen: React.FC = () => {
                     />
                   </div>
 
+                  {/* Cantidad */}
+                  <div className="space-y-2">
+                    <Label htmlFor="itemQuantity">Quantity</Label>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="icon" onClick={decrementQuantity}>
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <Input
+                        id="itemQuantity"
+                        type="number"
+                        min={0}
+                        value={itemCuantity}
+                        onChange={(e) => setItemCuantity(Number(e.target.value))}
+                        className="w-20 text-center"
+                      />
+                      <Button variant="outline" size="icon" onClick={incrementQuantity}>
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Valor */}
+                  <div className="space-y-2">
+                    <Label htmlFor="itemValue">Value</Label>
+                    <Input
+                      id="itemValue"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={itemValue}
+                      onChange={(e) => setItemValue(Number(e.target.value))}
+                      placeholder="Enter item value"
+                    />
+                  </div>
+
                   <div className="space-y-2">
                     <Label>Tags</Label>
                     <div className="flex space-x-2">
@@ -357,7 +599,7 @@ const BinDetailsScreen: React.FC = () => {
                     >
                       Cancel
                     </Button>
-                    <Button disabled={!itemName.trim()}>
+                    <Button onClick={() => handleSubmitItem()} disabled={!itemName.trim()}>
                       Add Item
                     </Button>
                   </div>
@@ -554,6 +796,41 @@ const BinDetailsScreen: React.FC = () => {
               />
             </div>
 
+            {/* Cantidad */}
+                  <div className="space-y-2">
+                    <Label htmlFor="itemQuantity">Quantity</Label>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="icon" onClick={decrementQuantity}>
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <Input
+                        id="itemQuantity"
+                        type="number"
+                        min={0}
+                        value={itemCuantity}
+                        onChange={(e) => setItemCuantity(Number(e.target.value))}
+                        className="w-20 text-center"
+                      />
+                      <Button variant="outline" size="icon" onClick={incrementQuantity}>
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Valor */}
+                  <div className="space-y-2">
+                    <Label htmlFor="itemValue">Value</Label>
+                    <Input
+                      id="itemValue"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={itemValue}
+                      onChange={(e) => setItemValue(Number(e.target.value))}
+                      placeholder="Enter item value"
+                    />
+                  </div>
+
             <div className="space-y-2">
               <Label>Tags</Label>
               <div className="flex space-x-2">
@@ -594,7 +871,7 @@ const BinDetailsScreen: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button disabled={!itemName.trim()}>
+              <Button onClick={() =>  handleUpdateItem()} disabled={!itemName.trim()}>
                 Update Item
               </Button>
             </div>
@@ -603,57 +880,88 @@ const BinDetailsScreen: React.FC = () => {
       </Dialog>
 
       {/* Edit Bin Modal */}
-      <Dialog open={isEditBinOpen} onOpenChange={setIsEditBinOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Bin</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="binName">Name *</Label>
-              <Input
-                id="binName"
-                value={binName}
-                onChange={(e) => setBinName(e.target.value)}
-                placeholder="Enter bin name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="binDescription">Description</Label>
-              <Textarea
-                id="binDescription"
-                value={binDescription}
-                onChange={(e) => setBinDescription(e.target.value)}
-                placeholder="Enter bin description"
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="binAddress">Address</Label>
-              <Input
-                id="binAddress"
-                value={binAddress}
-                onChange={(e) => setBinAddress(e.target.value)}
-                placeholder="Enter bin address"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditBinOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button disabled={!binName.trim()}>
-                Update Bin
-              </Button>
-            </div>
+       <Dialog open={isEditBinOpen} onOpenChange={setIsEditBinOpen}>
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Bin</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {/* Name */}
+          <div className="space-y-2">
+            <Label htmlFor="binName">Name *</Label>
+            <Input
+              id="binName"
+              value={binName}
+              onChange={(e) => setBinName(e.target.value)}
+              placeholder="Enter bin name"
+            />
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="binDescription">Description</Label>
+            <Textarea
+              id="binDescription"
+              value={binDescription}
+              onChange={(e) => setBinDescription(e.target.value)}
+              placeholder="Enter bin description"
+              rows={3}
+            />
+          </div>
+
+          {/* Address (si lo necesitas) */}
+          <div className="space-y-2">
+            <Label htmlFor="binAddress">Address</Label>
+            <Input
+              id="binAddress"
+              value={binAddress}
+              onChange={(e) => setBinAddress(e.target.value)}
+              placeholder="Enter bin address"
+            />
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <Label>Location { !selectedLocation && <span className="text-red-500">*</span> }</Label>
+            {!selectedLocation ? (
+              <Button variant="outline" onClick={() => {}}>
+                + Add Location
+              </Button>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" onClick={() =>{}}>
+                  Change Location
+                </Button>
+                <div className="inline-flex items-center space-x-1 bg-gray-100 px-2 py-1 rounded">
+                  <MapPin className="w-4 h-4 text-gray-600" />
+                  <span>{selectedLocation?.name}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={() => setIsEditBinOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={isUploading || !binName.trim()}
+              onClick={handleUpdateBin}
+            >
+              {isUploading ? (
+                <span className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Updating...</span>
+                </span>
+              ) : (
+                'Update Bin'
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     </div>
   );
 };
