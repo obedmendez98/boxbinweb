@@ -1,552 +1,801 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, ArrowLeft, Check, Edit, Trash2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { 
+  Search, 
+  Plus, 
+  MapPin, 
+  Edit, 
+  Trash2, 
+  ChevronLeft, 
+  ChevronRight,
+  MoreVertical,
+  Building,
+  Calendar,
+  X,
+  Loader2,
+  Check,
+  AlertCircle,
+  RefreshCw
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
+import { addDoc, collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, startAfter, updateDoc, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// Mock data and functions (replace with your actual implementations)
-const mockLocations = [
-  { id: '1', name: 'Kitchen', address: '123 Main St', description: 'Main kitchen area', itemCount: 5, userId: 'user1' },
-  { id: '2', name: 'Living Room', address: '123 Main St', description: 'Living room storage', itemCount: 3, userId: 'user1' },
-  { id: '3', name: 'Garage', address: '123 Main St', description: 'Garage storage area', itemCount: 8, userId: 'user1' },
-];
 
-// Mock translation function
-const useTranslation = () => ({
-  t: (key: string) => {
-    const translations: { [key: string]: string } = {
-      'locations.title': 'Locations',
-      'locations.searchPlaceholder': 'Search locations...',
-      'locations.empty': 'No locations found',
-      'locations.noMatches': 'No matching locations',
-      'locations.emptyDescription': 'Create your first location to get started',
-      'locations.createFirst': 'Create First Location',
-      'locations.addTitle': 'Add New Location',
-      'locations.editTitle': 'Edit Location',
-      'form.namePlaceholder': 'Location Name',
-      'form.addressLabel': 'Address',
-      'form.addressPlaceholder': 'Enter address',
-      'form.descriptionLabel': 'Description',
-      'form.descriptionPlaceholder': 'Enter description',
-      'form.adding': 'Adding...',
-      'form.updating': 'Updating...',
-      'form.addLocationButton': 'Add Location',
-      'form.updateLocationButton': 'Update Location',
-      'common.done': 'Done',
-      'common.optional': 'optional',
-      'alerts.selectLocation': 'Please select a location',
-      'alerts.deleteTitle': 'Delete Location',
-      'alerts.deleteConfirm': 'Are you sure you want to delete this location?',
-      'alerts.cancel': 'Cancel',
-      'alerts.delete': 'Delete',
-      'alerts.deletedTitle': 'Deleted',
-      'alerts.deletedMessage': 'Location deleted successfully',
-      'alerts.deleteErrorTitle': 'Error',
-      'alerts.deleteErrorMessage': 'Failed to delete location',
-      'alerts.locationRequiredTitle': 'Location Required',
-      'alerts.locationRequiredMessage': 'Please select a location to update',
-      'alerts.loginErrorTitle': 'Login Required',
-      'alerts.loginErrorMessage': 'Please login to continue',
-    };
-    return translations[key] || key;
-  }
-});
-
-// Mock user hook
-const useUser = () => ({
-  activeUser: () => ({ uid: 'user1', name: 'John Doe' }),
-  impersonatedUser: null
-});
-
-interface Location {
-  id: string;
-  name: string;
-  address: string;
-  description: string;
-  itemCount: number;
-  userId: string;
-}
-
-export default function LocationsManager() {
-  const { t } = useTranslation();
-  const { activeUser } = useUser();
-  
-  const [loading, setLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  //setError("");
-  
-  const [locations, setLocations] = useState<Location[]>([]);
+export const LocationsManager = () => {
+  // Estados principales
+  const [locations, setLocations] = useState<any>([]);
   const [searchText, setSearchText] = useState('');
-  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
-  
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [operationLoading, setOperationLoading] = useState(false);
   const [itemName, setItemName] = useState('');
   const [itemAddress, setItemAddress] = useState('');
   const [itemDescription, setItemDescription] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [idLocation, setIdLocation] = useState<string | null>(null);
-  const [showAlert, setShowAlert] = useState<{show: boolean, message: string, type: 'success' | 'error'}>({
-    show: false,
-    message: '',
-    type: 'success'
-  });
+  const [showAlert, setShowAlert] = useState({ show: false, type: '', message: '' });
+  const [editingId, setEditingId] = useState<any>(null);
+  
+  // Estados de paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [totalLocations, setTotalLocations] = useState(0);
+  //const [lastVisible, setLastVisible] = useState<any>(null);
+  //const [firstVisible, setFirstVisible] = useState<any>(null);
 
-  // Load locations on component mount
-  useEffect(() => {
-    setError("");
-    const currentUser = activeUser();
-    if (!currentUser) {
-      setLocations([]);
+  const { currentUser } = useAuth();
+
+  // Estados para navegación de páginas
+  const [pageSnapshots, setPageSnapshots] = useState(new Map());
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPrevPage, setHasPrevPage] = useState(false);
+
+  // Función para mostrar alertas
+  const showAlertMessage = (type: any, message: any) => {
+    setShowAlert({ show: true, type, message });
+    setTimeout(() => setShowAlert({ show: false, type: '', message: '' }), 4000);
+  };
+
+  // Función para obtener el total de ubicaciones
+  const getTotalLocations = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const q = query(
+        collection(db, 'locations'),
+        where('userId', '==', currentUser.uid)
+      );
+      const snapshot = await getDocs(q);
+      setTotalLocations(snapshot.size);
+    } catch (error) {
+      console.error('Error getting total locations:', error);
+    }
+  };
+
+  // Función para cargar ubicaciones con paginación
+  const loadLocations = async (page = 1, isRefresh = false) => {
+    if (!currentUser) return;
+    
+    setPageLoading(true);
+    
+    try {
+      const locationsRef = collection(db, 'locations');
+      let q;
+      
+      // Construir query base
+      const baseQuery = [
+        where('userId', '==', currentUser.uid),
+        orderBy(sortBy, sortOrder === 'asc' ? 'asc' : 'desc'),
+        limit(itemsPerPage + 1) // +1 para determinar si hay siguiente página
+      ];
+
+      if (page === 1 || isRefresh) {
+        // Primera página o refresh
+        q = query(locationsRef, ...baseQuery);
+        setPageSnapshots(new Map());
+      } else {
+        // Páginas siguientes
+        const pageSnapshot = pageSnapshots.get(page - 1);
+        if (pageSnapshot) {
+          q = query(locationsRef, ...baseQuery, startAfter(pageSnapshot));
+        } else {
+          // Si no tenemos el snapshot, volvemos a la primera página
+          q = query(locationsRef, ...baseQuery);
+          setCurrentPage(1);
+        }
+      }
+
+      const snapshot = await getDocs(q);
+      const docs = snapshot.docs;
+      
+      // Separar los documentos de la página actual y verificar si hay más
+      const pageData = docs.slice(0, itemsPerPage);
+      const hasMore = docs.length > itemsPerPage;
+      
+      const locationsData = pageData.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt)
+      }));
+
+      setLocations(locationsData);
+      setHasNextPage(hasMore);
+      setHasPrevPage(page > 1);
+      
+      // Guardar snapshots para navegación
+      if (pageData.length > 0) {
+        const newPageSnapshots = new Map(pageSnapshots);
+        newPageSnapshots.set(page, pageData[pageData.length - 1]);
+        setPageSnapshots(newPageSnapshots);
+        
+        //setLastVisible(pageData[pageData.length - 1]);
+        //setFirstVisible(pageData[0]);
+      }
+      
+    } catch (error) {
+      console.error('Error loading locations:', error);
+      showAlertMessage('error', 'Error loading the locations');
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  // Función para filtrar ubicaciones localmente
+  const getFilteredLocations = () => {
+    if (!searchText.trim()) return locations;
+    
+    const searchTerm = searchText.toLowerCase();
+    return locations.filter((location: any) =>
+      location.name.toLowerCase().includes(searchTerm) ||
+      location.address?.toLowerCase().includes(searchTerm) ||
+      location.description?.toLowerCase().includes(searchTerm)
+    );
+  };
+
+  // Función para crear ubicación
+  const handleSubmit = async () => {
+    if (!itemName.trim() || !currentUser) return;
+    
+    setOperationLoading(true);
+    try {
+      const data = {
+        name: itemName.trim(),
+        address: itemAddress.trim(),
+        description: itemDescription.trim(),
+        createdAt: serverTimestamp(),
+        userId: currentUser.uid,
+      };
+      
+      await addDoc(collection(db, 'locations'), data);
+      
+      // Resetear formulario
+      setItemName('');
+      setItemAddress('');
+      setItemDescription('');
+      setIsModalVisible(false);
+      
+      showAlertMessage('success', 'Location created successfully');
+      
+      // Recargar datos
+      await loadLocations(1, true);
+      await getTotalLocations();
+      
+    } catch (error) {
+      console.error('Error creating location:', error);
+      showAlertMessage('error', 'Error creating the location');
+
+    } finally {
+      setOperationLoading(false);
+    }
+  };
+
+  // Función para actualizar ubicación
+  const handleUpdateSubmit = async () => {
+    if (!itemName.trim() || !editingId || !currentUser) {
+      console.log(itemName)
+      console.log(editingId)
+      console.log(currentUser);
       return;
     }
-
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLocations(mockLocations);
-      setFilteredLocations(mockLocations);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  // Filter locations based on search text
-  useEffect(() => {
-    if (!searchText.trim()) {
-      setFilteredLocations(locations);
-    } else {
-      const filtered = locations.filter(location =>
-        location.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        location.address.toLowerCase().includes(searchText.toLowerCase()) ||
-        location.description.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredLocations(filtered);
-    }
-  }, [searchText, locations]);
-
-  const showAlertMessage = (message: string, type: 'success' | 'error') => {
-    setShowAlert({ show: true, message, type });
-    setTimeout(() => setShowAlert({ show: false, message: '', type: 'success' }), 3000);
-  };
-
-  const handleDeleteLocation = async (locationId: string) => {
+    
+    setOperationLoading(true);
     try {
-      console.log(`Deleting location: ${locationId}`);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const locationRef = doc(db, 'locations', editingId);
+      await updateDoc(locationRef, {
+        name: itemName.trim(),
+        address: itemAddress.trim(),
+        description: itemDescription.trim(),
+        updatedAt: serverTimestamp()
+      });
       
-      setLocations(prev => prev.filter(loc => loc.id !== locationId));
+      // Resetear formulario
+      setItemName('');
+      setItemAddress('');
+      setItemDescription('');
+      setIsEditModalVisible(false);
+      setEditingId(null);
       setSelectedLocation(null);
-      showAlertMessage(t('alerts.deletedMessage'), 'success');
+      
+     showAlertMessage('success', 'Location updated successfully');
+      
+      // Recargar datos
+      await loadLocations(currentPage);
+      
     } catch (error) {
-      showAlertMessage(t('alerts.deleteErrorMessage'), 'error');
-      console.error("Error deleting location:", error);
+      console.error('Error updating location:', error);
+      showAlertMessage('error', 'Error updating the location');
+    } finally {
+      setOperationLoading(false);
     }
   };
 
+  // Función para eliminar ubicación
+  const confirmDeleteLocation = async (locationId: string) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta ubicación?')) {
+      return;
+    }
+    
+    setOperationLoading(true);
+    try {
+      await deleteDoc(doc(db, 'locations', locationId));
+      
+      setSelectedLocation(null);
+      showAlertMessage('success', 'Location deleted successfully');      
+      // Recargar datos
+      await loadLocations(currentPage);
+      await getTotalLocations();
+      
+    } catch (error) {
+      console.error('Error deleting location:', error);
+      showAlertMessage('error', 'Error deleting the location');
+    } finally {
+      setOperationLoading(false);
+    }
+  };
+
+  // Función para manejar selección de ubicación
+  const handleLocationSelect = (location: any) => {
+    setSelectedLocation(selectedLocation?.id === location.id ? null : location);
+  };
+
+  // Función para manejar edición
   const handleEditLocation = (locationId: string) => {
-    const locationToEdit = locations.find(location => location.id === locationId);
-    if (locationToEdit) {
-      setIdLocation(locationId);
-      setItemName(locationToEdit.name);
-      setItemAddress(locationToEdit.address);
-      setItemDescription(locationToEdit.description);
+    const location = locations.find((l: any) => l.id === locationId);
+    if (location) {
+      setEditingId(locationId);
+      setItemName(location.name);
+      setItemAddress(location.address || '');
+      setItemDescription(location.description || '');
       setIsEditModalVisible(true);
     }
   };
 
-  const confirmDeleteLocation = (locationId: string) => {
-    if (window.confirm(`${t('alerts.deleteTitle')}\n${t('alerts.deleteConfirm')}`)) {
-      handleDeleteLocation(locationId);
+  // Función para resetear formulario
+  const resetForm = () => {
+    setItemName('');
+    setItemAddress('');
+    setItemDescription('');
+    setEditingId(null);
+  };
+
+  // Función para formatear fecha
+  const formatDate = (date: any) => {
+    if (!date) return '';
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Función para navegar páginas
+  const handlePageChange = (newPage: any) => {
+    if (newPage !== currentPage && newPage > 0) {
+      setCurrentPage(newPage);
+      loadLocations(newPage);
     }
   };
 
-  const handleSubmit = async () => {
-    try {
-      setIsLoading(true);
-      const currentUser = activeUser();
-
-      if (!currentUser) {
-        showAlertMessage(t('alerts.loginErrorMessage'), 'error');
-        return;
-      }
-
-      const newLocation: Location = {
-        id: Date.now().toString(),
-        name: itemName,
-        address: itemAddress,
-        description: itemDescription,
-        itemCount: 0,
-        userId: currentUser.uid,
-      };
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setLocations(prev => [...prev, newLocation]);
-      setItemName("");
-      setItemAddress("");
-      setItemDescription("");
-      setIsLoading(false);
-      setIsModalVisible(false);
-      showAlertMessage('Location added successfully', 'success');
-    } catch (error) {
-      setIsLoading(false);
-      showAlertMessage('Error adding location', 'error');
-      console.log(error);
-    }
+  // Función para refrescar datos
+  const handleRefresh = () => {
+    setCurrentPage(1);
+    loadLocations(1, true);
+    getTotalLocations();
   };
 
-  const handleUpdateSubmit = async () => {
-    try {
-      if (!idLocation) {
-        showAlertMessage(t('alerts.locationRequiredMessage'), 'error');
-        return;
-      }
-      
-      setIsLoading(true);
-      const currentUser = activeUser();
-
-      if (!currentUser) {
-        showAlertMessage(t('alerts.loginErrorMessage'), 'error');
-        return;
-      }
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setLocations(prev => prev.map(loc => 
-        loc.id === idLocation 
-          ? { ...loc, name: itemName, address: itemAddress, description: itemDescription }
-          : loc
-      ));
-      
-      setItemName("");
-      setItemAddress("");
-      setItemDescription("");
-      setIsLoading(false);
-      setIsEditModalVisible(false);
-      showAlertMessage('Location updated successfully', 'success');
-    } catch (error) {
-      setIsLoading(false);
-      showAlertMessage('Error updating location', 'error');
-      console.log(error);
+  // Efectos
+  useEffect(() => {
+    if (currentUser) {
+      loadLocations(1, true);
+      getTotalLocations();
     }
-  };
+  }, [currentUser, itemsPerPage, sortBy, sortOrder]);
 
-  const handleLocationSelect = (location: Location) => {
+  useEffect(() => {
+    if (currentUser) {
+      // Listener en tiempo real para cambios en la colección
+      const q = query(
+        collection(db, 'locations'),
+        where('userId', '==', currentUser.uid)
+      );
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setTotalLocations(snapshot.size);
+      });
 
-    if (selectedLocation?.id === location.id) {
-      setSelectedLocation(null);
-    } else {
-      setSelectedLocation(location);
+      return () => unsubscribe();
     }
-  };
+  }, [currentUser]);
 
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
+  if (!currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Alert className="max-w-md">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Por favor, inicia sesión para acceder a tus ubicaciones</AlertDescription>
         </Alert>
       </div>
     );
   }
 
+  const filteredLocations = getFilteredLocations();
+  const totalPages = Math.ceil(totalLocations / itemsPerPage);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* Alert */}
-      {showAlert.show && (
-        <Alert className={`fixed top-4 right-4 z-50 max-w-md ${
-          showAlert.type === 'error' ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'
-        }`}>
-          <AlertDescription className={showAlert.type === 'error' ? 'text-red-700' : 'text-green-700'}>
-            {showAlert.message}
-          </AlertDescription>
-        </Alert>
-      )}
+ <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+   {/* Floating alert */}
+   {showAlert.show && (
+     <Alert className={`fixed top-4 right-4 z-50 max-w-md shadow-lg border-l-4 ${
+       showAlert.type === 'error' 
+         ? 'border-l-red-500 bg-red-50 border-red-200' 
+         : 'border-l-green-500 bg-green-50 border-green-200'
+     } animate-in slide-in-from-right-full duration-300`}>
+       <div className="flex items-center">
+         {showAlert.type === 'error' ? (
+           <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+         ) : (
+           <Check className="h-4 w-4 text-green-600 mr-2" />
+         )}
+         <AlertDescription className={showAlert.type === 'error' ? 'text-red-800' : 'text-green-800'}>
+           {showAlert.message}
+         </AlertDescription>
+       </div>
+     </Alert>
+   )}
 
-      {/* Header */}
-      {locations.length > 0 && (
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="p-2">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-bold">{t('locations.title')}</h1>
-          </div>
-          
-        </div>
-      )}
+   <div className="container mx-auto px-4 py-8">
+     {/* Header */}
+     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+       <div className="flex items-center gap-4 mb-4 sm:mb-0">
+         <div className="p-3 bg-blue-100 rounded-xl">
+           <Building className="h-8 w-8 text-blue-600" />
+         </div>
+         <div>
+           <h1 className="text-3xl font-bold text-gray-900">Locations</h1>
+           <p className="text-gray-600 mt-1">Manage all your locations</p>
+         </div>
+       </div>
+       
+       <div className="flex items-center gap-3">
+         <Button 
+           variant="outline" 
+           size="sm" 
+           onClick={handleRefresh}
+           disabled={pageLoading}
+         >
+           <RefreshCw className={`h-4 w-4 mr-2 ${pageLoading ? 'animate-spin' : ''}`} />
+           Refresh
+         </Button>
+         <Badge variant="outline" className="px-3 py-1">
+           {totalLocations} locations
+         </Badge>
+         <Button 
+           onClick={() => {
+             resetForm();
+             setIsModalVisible(true);
+           }}
+           className="bg-blue-600 hover:bg-blue-700 shadow-lg"
+         >
+           <Plus className="h-4 w-4 mr-2" />
+           New Location
+         </Button>
+       </div>
+     </div>
 
-      {/* Search Bar */}
-      {locations.length > 0 && (
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder={t('locations.searchPlaceholder')}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="pl-10 pr-10"
-          />
-          {searchText && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1"
-              onClick={() => setSearchText('')}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      )}
+     {/* Filters and search */}
+     <Card className="mb-6 shadow-sm border-0 bg-white/80 backdrop-blur-sm">
+       <CardContent className="p-6">
+         <div className="flex flex-col lg:flex-row gap-4">
+           {/* Search bar */}
+           <div className="relative flex-1">
+             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+             <Input
+               placeholder="Search by name, address or description..."
+               value={searchText}
+               onChange={(e) => setSearchText(e.target.value)}
+               className="pl-10 pr-10 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+             />
+             {searchText && (
+               <Button
+                 variant="ghost"
+                 size="sm"
+                 className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-7 w-7"
+                 onClick={() => setSearchText('')}
+               >
+                 <X className="h-3 w-3" />
+               </Button>
+             )}
+           </div>
 
-      {/* Content */}
-      {filteredLocations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
-          </div>
-          <h2 className="text-xl font-semibold mb-2">
-            {searchText.trim() ? t('locations.noMatches') : t('locations.empty')}
-          </h2>
-          {!searchText.trim() && (
-            <>
-              <p className="text-gray-600 mb-4">{t('locations.emptyDescription')}</p>
-              <Button onClick={() => setIsModalVisible(true)} className="bg-blue-600 hover:bg-blue-700">
-                {t('locations.createFirst')}
-              </Button>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredLocations.map((location) => (
-            <Card
-              key={location.id}
-              className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                selectedLocation?.id === location.id
-                  ? 'ring-2 ring-blue-500 bg-blue-50'
-                  : 'hover:shadow-md'
-              }`}
-              onClick={() => handleLocationSelect(location)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
-                      <h3 className="font-semibold text-lg">{location.name}</h3>
-                    </div>
-                    
-                    {location.address && (
-                      <p className="text-sm text-gray-600 mb-2">{location.address}</p>
-                    )}
-                    
-                    {location.description && (
-                      <p className="text-sm text-gray-700 mb-2">{location.description}</p>
-                    )}
-                    
-                    {location.itemCount > 0 && (
-                      <Badge variant="secondary" className="mb-2">
-                        {location.itemCount} items
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  {selectedLocation?.id === location.id && (
-                    <div className="flex items-center gap-2">
-                      <Check className="h-5 w-5 text-blue-600" />
-                    </div>
-                  )}
-                </div>
-                
-                {selectedLocation?.id === location.id && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditLocation(location.id);
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        confirmDeleteLocation(location.id);
-                      }}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+           {/* Filters */}
+           <div className="flex gap-3">
+             <Select value={sortBy} onValueChange={setSortBy}>
+               <SelectTrigger className="w-40">
+                 <SelectValue />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="name">Name</SelectItem>
+                 <SelectItem value="createdAt">Date</SelectItem>
+               </SelectContent>
+             </Select>
 
-      {/* Floating Action Button */}
-      <Button
-        onClick={() => {
-          setItemName("");
-          setItemAddress("");
-          setItemDescription("");
-          setIsModalVisible(true);
-        }}
-        className="fixed bottom-6 right-6 rounded-full w-14 h-14 bg-blue-600 hover:bg-blue-700 shadow-lg"
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
+             <Select value={sortOrder} onValueChange={setSortOrder}>
+               <SelectTrigger className="w-32">
+                 <SelectValue />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="asc">A-Z</SelectItem>
+                 <SelectItem value="desc">Z-A</SelectItem>
+               </SelectContent>
+             </Select>
 
-      {/* Add Location Modal */}
-      <Dialog open={isModalVisible} onOpenChange={setIsModalVisible}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{t('locations.addTitle')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">{t('form.namePlaceholder')} *</Label>
-              <Input
-                id="name"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                placeholder={t('form.namePlaceholder')}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="address">
-                {t('form.addressLabel')} 
-                <span className="text-gray-500 text-sm ml-1">({t('common.optional')})</span>
-              </Label>
-              <Input
-                id="address"
-                value={itemAddress}
-                onChange={(e) => setItemAddress(e.target.value)}
-                placeholder={t('form.addressPlaceholder')}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">
-                {t('form.descriptionLabel')} 
-                <span className="text-gray-500 text-sm ml-1">({t('common.optional')})</span>
-              </Label>
-              <Textarea
-                id="description"
-                value={itemDescription}
-                onChange={(e) => setItemDescription(e.target.value)}
-                placeholder={t('form.descriptionPlaceholder')}
-                rows={4}
-              />
-            </div>
-            
-            <Button
-              onClick={handleSubmit}
-              disabled={!itemName.trim() || isLoading}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('form.adding')}
-                </>
-              ) : (
-                t('form.addLocationButton')
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+             <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
+               <SelectTrigger className="w-24">
+                 <SelectValue />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="6">6</SelectItem>
+                 <SelectItem value="12">12</SelectItem>
+                 <SelectItem value="24">24</SelectItem>
+               </SelectContent>
+             </Select>
+           </div>
+         </div>
+       </CardContent>
+     </Card>
 
-      {/* Edit Location Modal */}
-      <Dialog open={isEditModalVisible} onOpenChange={setIsEditModalVisible}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{t('locations.editTitle')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">{t('form.namePlaceholder')} *</Label>
-              <Input
-                id="edit-name"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                placeholder={t('form.namePlaceholder')}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-address">
-                {t('form.addressLabel')} 
-                <span className="text-gray-500 text-sm ml-1">({t('common.optional')})</span>
-              </Label>
-              <Input
-                id="edit-address"
-                value={itemAddress}
-                onChange={(e) => setItemAddress(e.target.value)}
-                placeholder={t('form.addressPlaceholder')}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">
-                {t('form.descriptionLabel')} 
-                <span className="text-gray-500 text-sm ml-1">({t('common.optional')})</span>
-              </Label>
-              <Textarea
-                id="edit-description"
-                value={itemDescription}
-                onChange={(e) => setItemDescription(e.target.value)}
-                placeholder={t('form.descriptionPlaceholder')}
-                rows={4}
-              />
-            </div>
-            
-            <Button
-              onClick={handleUpdateSubmit}
-              disabled={!itemName.trim() || isLoading}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('form.updating')}
-                </>
-              ) : (
-                t('form.updateLocationButton')
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+     {/* Loading state */}
+     {pageLoading && (
+       <div className="flex items-center justify-center py-20">
+         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+       </div>
+     )}
+
+     {/* Content */}
+     {!pageLoading && filteredLocations.length === 0 ? (
+       <div className="flex flex-col items-center justify-center py-20">
+         <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mb-6">
+           <Building className="w-16 h-16 text-blue-600" />
+         </div>
+         <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+           {searchText.trim() ? 'No locations found' : 'No locations'}
+         </h2>
+         <p className="text-gray-600 mb-6 text-center max-w-md">
+           {searchText.trim() 
+             ? 'Try different search terms' 
+             : 'Start by adding your first location to better organize your items'
+           }
+         </p>
+         {!searchText.trim() && (
+           <Button 
+             onClick={() => {
+               resetForm();
+               setIsModalVisible(true);
+             }}
+             className="bg-blue-600 hover:bg-blue-700"
+           >
+             <Plus className="h-4 w-4 mr-2" />
+             Create First Location
+           </Button>
+         )}
+       </div>
+     ) : !pageLoading && (
+       <>
+         {/* Locations grid */}
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+           {filteredLocations.map((location: any) => (
+             <Card
+               key={location.id}
+               className={`group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 shadow-sm bg-white/80 backdrop-blur-sm ${
+                 selectedLocation?.id === location.id
+                   ? 'ring-2 ring-blue-500 shadow-blue-100'
+                   : 'hover:shadow-gray-200'
+               }`}
+               onClick={() => handleLocationSelect(location)}
+             >
+               <CardHeader className="pb-3">
+                 <div className="flex items-start justify-between">
+                   <div className="flex items-center gap-3">
+                     <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                       <MapPin className="h-5 w-5 text-blue-600" />
+                     </div>
+                     <div>
+                       <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                         {location.name}
+                       </CardTitle>
+                       <div className="flex items-center gap-2 mt-1">
+                         <Calendar className="h-3 w-3 text-gray-400" />
+                         <span className="text-xs text-gray-500">{formatDate(location.createdAt)}</span>
+                       </div>
+                     </div>
+                   </div>
+                   
+                   <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                       <Button 
+                         variant="ghost" 
+                         size="sm" 
+                         className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                         onClick={(e) => e.stopPropagation()}
+                       >
+                         <MoreVertical className="h-4 w-4" />
+                       </Button>
+                     </DropdownMenuTrigger>
+                     <DropdownMenuContent align="end">
+                       <DropdownMenuItem onClick={(e) => {
+                         e.stopPropagation();
+                         handleEditLocation(location.id);
+                       }}>
+                         <Edit className="h-4 w-4 mr-2" />
+                         Edit
+                       </DropdownMenuItem>
+                       <DropdownMenuItem 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           confirmDeleteLocation(location.id);
+                         }}
+                         className="text-red-600 hover:text-red-700"
+                       >
+                         <Trash2 className="h-4 w-4 mr-2" />
+                         Delete
+                       </DropdownMenuItem>
+                     </DropdownMenuContent>
+                   </DropdownMenu>
+                 </div>
+               </CardHeader>
+               
+               <CardContent className="pt-0">
+                 {location.address && (
+                   <p className="text-sm text-gray-600 mb-2 line-clamp-2">{location.address}</p>
+                 )}
+                 
+                 {location.description && (
+                   <p className="text-sm text-gray-700 mb-3 line-clamp-2">{location.description}</p>
+                 )}
+                 
+                 <div className="flex items-center justify-between">
+                   <Badge variant="secondary" className="px-2 py-1 text-xs">
+                     Location
+                   </Badge>
+                   
+                   {selectedLocation?.id === location.id && (
+                     <div className="flex items-center gap-1">
+                       <Check className="h-4 w-4 text-blue-600" />
+                       <span className="text-sm text-blue-600 font-medium">Selected</span>
+                     </div>
+                   )}
+                 </div>
+               </CardContent>
+             </Card>
+           ))}
+         </div>
+
+         {/* Pagination */}
+         {!searchText && totalPages > 1 && (
+           <div className="flex items-center justify-between">
+             <div className="text-sm text-gray-600">
+               Page {currentPage} of {totalPages} - {totalLocations} total locations
+             </div>
+             
+             <div className="flex items-center gap-2">
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => handlePageChange(currentPage - 1)}
+                 disabled={!hasPrevPage || pageLoading}
+               >
+                 <ChevronLeft className="h-4 w-4" />
+               </Button>
+               
+               <span className="text-sm text-gray-600 px-3">
+                 {currentPage} / {totalPages}
+               </span>
+               
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => handlePageChange(currentPage + 1)}
+                 disabled={!hasNextPage || pageLoading}
+               >
+                 <ChevronRight className="h-4 w-4" />
+               </Button>
+             </div>
+           </div>
+         )}
+       </>
+     )}
+   </div>
+
+   {/* Modal for adding location */}
+   <Dialog open={isModalVisible} onOpenChange={setIsModalVisible}>
+     <DialogContent className="sm:max-w-[500px]">
+       <DialogHeader>
+         <DialogTitle className="text-xl font-semibold">New Location</DialogTitle>
+       </DialogHeader>
+       <div className="space-y-5">
+         <div className="space-y-2">
+           <Label htmlFor="name" className="text-sm font-medium">Name *</Label>
+           <Input
+             id="name"
+             value={itemName}
+             onChange={(e) => setItemName(e.target.value)}
+             placeholder="Ex: Main Office"
+             className="h-11"
+           />
+         </div>
+         
+         <div className="space-y-2">
+           <Label htmlFor="address" className="text-sm font-medium">
+             Address <span className="text-gray-500 font-normal">(optional)</span>
+           </Label>
+           <Input
+             id="address"
+             value={itemAddress}
+             onChange={(e) => setItemAddress(e.target.value)}
+             placeholder="Ex: 123 Reform Ave, Mexico City"
+             className="h-11"
+           />
+         </div>
+         
+         <div className="space-y-2">
+           <Label htmlFor="description" className="text-sm font-medium">
+             Description <span className="text-gray-500 font-normal">(optional)</span>
+           </Label>
+           <Textarea
+             id="description"
+             value={itemDescription}
+             onChange={(e) => setItemDescription(e.target.value)}
+             placeholder="Location description..."
+             rows={4}
+             className="resize-none"
+           />
+         </div>
+         
+         <div className="flex gap-3 pt-4">
+           <Button
+             variant="outline"
+             onClick={() => setIsModalVisible(false)}
+             className="flex-1"
+             disabled={operationLoading}
+           >
+             Cancel
+           </Button>
+           <Button
+             onClick={handleSubmit}
+             disabled={!itemName.trim() || operationLoading}
+             className="flex-1 bg-blue-600 hover:bg-blue-700"
+           >
+             {operationLoading ? (
+               <>
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                 Creating...
+               </>
+             ) : (
+               <>
+                 <Plus className="mr-2 h-4 w-4" />
+                 Create Location
+               </>
+             )}
+           </Button>
+         </div>
+       </div>
+     </DialogContent>
+   </Dialog>
+
+   {/* Edit Location Modal */}
+   <Dialog open={isEditModalVisible} onOpenChange={setIsEditModalVisible}>
+     <DialogContent className="sm:max-w-[500px]">
+       <DialogHeader>
+         <DialogTitle className="text-xl font-semibold">Edit Location</DialogTitle>
+       </DialogHeader>
+       <div className="space-y-5">
+         <div className="space-y-2">
+           <Label htmlFor="edit-name" className="text-sm font-medium">Name *</Label>
+           <Input
+             id="edit-name"
+             value={itemName}
+             onChange={(e) => setItemName(e.target.value)}
+             placeholder="Ex: Main Office"
+             className="h-11"
+           />
+         </div>
+         
+         <div className="space-y-2">
+           <Label htmlFor="edit-address" className="text-sm font-medium">
+             Address <span className="text-gray-500 font-normal">(optional)</span>
+           </Label>
+           <Input
+             id="edit-address"
+             value={itemAddress}
+             onChange={(e) => setItemAddress(e.target.value)}
+             placeholder="Ex: 123 Reform Ave, Mexico City"
+             className="h-11"
+           />
+         </div>
+         
+         <div className="space-y-2">
+           <Label htmlFor="edit-description" className="text-sm font-medium">
+             Description <span className="text-gray-500 font-normal">(optional)</span>
+           </Label>
+           <Textarea
+             id="edit-description"
+             value={itemDescription}
+             onChange={(e) => setItemDescription(e.target.value)}
+             placeholder="Location description..."
+             rows={4}
+             className="resize-none"
+           />
+         </div>
+         
+         <div className="flex gap-3 pt-4">
+           <Button
+             variant="outline"
+             onClick={() => setIsEditModalVisible(false)}
+             className="flex-1"
+             disabled={operationLoading}
+           >
+             Cancel
+           </Button>
+           <Button
+             onClick={() => handleUpdateSubmit()}
+             disabled={!itemName.trim() || operationLoading}
+             className="flex-1 bg-blue-600 hover:bg-blue-700"
+           >
+             {operationLoading ? (
+               <>
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                 Updating...
+               </>
+             ) : (
+               <>
+                 <Edit className="mr-2 h-4 w-4" />
+                 Update Location
+               </>
+             )}
+           </Button>
+         </div>
+       </div>
+     </DialogContent>
+   </Dialog>
+ </div>
+)
+};

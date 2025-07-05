@@ -5,7 +5,7 @@ import HomeScreen from '@/pages/dashboard/home';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import BinDetailsPage from '@/pages/dashboard/binDetail';
-import LocationsManager from '@/pages/dashboard/Locations';
+import { LocationsManager } from '@/pages/dashboard/Locations';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
