@@ -664,12 +664,7 @@ export default function HomeScreen() {
                   <p className="text-gray-600 mb-6 max-w-sm mx-auto">
                     {searchTextBins ? 'Try adjusting your search terms to find what you\'re looking for' : 'Create your first bin to start organizing your inventory'}
                   </p>
-                  {!searchTextBins && (
-                    <Button onClick={() => navigate('/add-bin')} className="bg-emerald-600 hover:bg-emerald-700">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create First Bin
-                    </Button>
-                  )}
+                  
                 </CardContent>
               </Card>
             ) : (
