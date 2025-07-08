@@ -90,7 +90,7 @@ export interface Item {
 const BinDetailsScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-   const { currentUser } = useAuth();
+  const { currentUser } = useAuth();
   
   // States
   const [bin, setBin] = useState<BinDetails | null>(null);
