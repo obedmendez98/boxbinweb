@@ -996,6 +996,8 @@ const BinDetailsScreen: React.FC = () => {
             <div className="space-y-3">
               <Label className="text-sm font-medium text-slate-700">Location {!selectedLocation && <span className="text-red-500">*</span>}</Label>
               {!selectedLocation ? (
+                <>
+                {/*
                 <Button 
                   variant="outline" 
                   onClick={() => {}}
@@ -1003,15 +1005,17 @@ const BinDetailsScreen: React.FC = () => {
                 >
                   + Add Location
                 </Button>
+                */}
+                </>
               ) : (
                 <div className="flex items-center space-x-3">
-                  <Button 
+                  {/*<Button 
                     variant="outline" 
                     onClick={() => {}}
                     className="rounded-xl border-slate-300 hover:bg-slate-50"
                   >
                     Change Location
-                  </Button>
+                  </Button>*/}
                   <div className="inline-flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-full border border-blue-200">
                     <MapPin className="w-4 h-4 text-blue-600" />
                     <span className="text-sm text-blue-700 font-medium">{selectedLocation?.name}</span>
