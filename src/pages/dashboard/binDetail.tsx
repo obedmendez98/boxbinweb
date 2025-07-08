@@ -264,6 +264,8 @@ const BinDetailsScreen: React.FC = () => {
       setBinDescription(bin.description);
       setBinAddress(bin.address);
       setIsEditBinOpen(true);
+      console.log(bin);
+      setSelectedLocation(bin.location);
     }
   };
 
@@ -361,7 +363,6 @@ const BinDetailsScreen: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    setSelectedLocation(null);
     setIsUploading(false);
   }, [])
 
@@ -924,14 +925,16 @@ const BinDetailsScreen: React.FC = () => {
           <div className="space-y-2">
             <Label>Location { !selectedLocation && <span className="text-red-500">*</span> }</Label>
             {!selectedLocation ? (
-              <Button variant="outline" onClick={() => {}}>
+              <>
+              {/*<Button variant="outline" onClick={() => {}}>
                 + Add Location
-              </Button>
+              </Button>*/}
+              </>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="outline" onClick={() =>{}}>
+                {/*<Button variant="outline" onClick={() =>{}}>
                   Change Location
-                </Button>
+                </Button>*/}
                 <div className="inline-flex items-center space-x-1 bg-gray-100 px-2 py-1 rounded">
                   <MapPin className="w-4 h-4 text-gray-600" />
                   <span>{selectedLocation?.name}</span>
