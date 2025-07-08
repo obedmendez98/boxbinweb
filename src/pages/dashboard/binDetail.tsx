@@ -264,6 +264,8 @@ const BinDetailsScreen: React.FC = () => {
       setBinDescription(bin.description);
       setBinAddress(bin.address);
       setIsEditBinOpen(true);
+      console.log(bin);
+      setSelectedLocation(bin.location);
     }
   };
 
@@ -361,7 +363,6 @@ const BinDetailsScreen: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    setSelectedLocation(null);
     setIsUploading(false);
   }, [])
 
