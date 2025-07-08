@@ -3,19 +3,20 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
   LogOut,
   MapPin,
-  Menu,
-  X,
+  User,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 import { logoutUser } from "@/lib/firebase";
 import LogoIcon from "@/assets/logo.png";
-
 
 interface SidebarProps {
   className?: string;
@@ -23,14 +24,16 @@ interface SidebarProps {
 
 const sidebarItems = [
   {
-    title: "Home",
+    title: "Dashboard",
     href: "/home",
     icon: Home,
+    badge: null,
   },
   {
     title: "Locations",
     href: "/locations",
     icon: MapPin,
+    badge: "New",
   },
 ];
 
@@ -42,7 +45,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   const handleLogout = async () => {
     try {
-      await logoutUser()
+      await logoutUser();
       navigate('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
@@ -51,80 +54,148 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div className={cn(
-      "relative flex h-full flex-col border-r bg-background",
-      collapsed ? "w-16" : "w-64",
+      "relative flex h-full flex-col bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 ease-in-out",
+      collapsed ? "w-16" : "w-72",
       className
     )}>
       {/* Header del Sidebar */}
-      <div className="relative flex h-20 items-center justify-end px-4 border-b">
+      <div className="relative flex h-16 items-center justify-between px-4 border-b border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
         {!collapsed && (
-          
-          <img
-            src={LogoIcon}
-            alt="Logo"
-            className="absolute left-1/2 -translate-x-1/2 w-15 h-15"
-          />
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <img
+                src={LogoIcon}
+                alt="Logo"
+                className="w-8 h-8 rounded-lg shadow-sm"
+              />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Dashboard
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                v2.0
+              </p>
+            </div>
+          </div>
         )}
 
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
         >
-          {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
         </Button>
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-2">
+      <ScrollArea className="flex-1 px-3 py-6">
+        <nav className="space-y-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
             
             return (
-              <Button
-                key={item.href}
-                variant={isActive ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start",
-                  collapsed && "px-2",
-                  isActive && "bg-accent"
+              <div key={item.href} className="relative">
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start h-11 rounded-xl transition-all duration-200 group relative overflow-hidden",
+                    collapsed ? "px-3" : "px-4",
+                    isActive 
+                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm border border-blue-200 dark:border-blue-800" 
+                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-slate-100"
+                  )}
+                  onClick={() => navigate(item.href)}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full" />
+                  )}
+                  
+                  <Icon className={cn(
+                    "h-5 w-5 transition-colors flex-shrink-0",
+                    !collapsed && "mr-3",
+                    isActive && "text-blue-600 dark:text-blue-400"
+                  )} />
+                  
+                  {!collapsed && (
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-medium">{item.title}</span>
+                      {item.badge && (
+                        <Badge 
+                          variant="secondary" 
+                          className="ml-2 h-5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </Button>
+                
+                {/* Tooltip para modo colapsado */}
+                {collapsed && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    {item.title}
+                    {item.badge && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
                 )}
-                onClick={() => navigate(item.href)}
-              >
-                <Icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
-                {!collapsed && <span>{item.title}</span>}
-              </Button>
+              </div>
             );
           })}
         </nav>
       </ScrollArea>
 
-      <Separator />
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
 
       {/* Footer del Sidebar */}
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-3 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm">
+        {/* User Profile */}
+        {!collapsed && currentUser && (
+          <div className="flex items-center space-x-3 p-3 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <User className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                {currentUser.displayName || 'Usuario'}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                {currentUser.email}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Logout Button */}
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50",
-            collapsed && "px-2"
+            "w-full justify-start h-11 rounded-xl transition-all duration-200 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 group",
+            collapsed && "px-3"
           )}
           onClick={handleLogout}
         >
-          <LogOut className={cn("h-4 w-4", !collapsed && "mr-2")} />
-          {!collapsed && <span>Log out</span>}
+          <LogOut className={cn("h-5 w-5", !collapsed && "mr-3")} />
+          {!collapsed && <span className="font-medium">Cerrar sesión</span>}
+          
+          {/* Tooltip para modo colapsado */}
+          {collapsed && (
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+              Cerrar sesión
+            </div>
+          )}
         </Button>
-
-        {!collapsed && currentUser && (
-          <div className="pt-2 border-t">
-            <p className="text-sm text-muted-foreground truncate">
-              {currentUser.email}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
