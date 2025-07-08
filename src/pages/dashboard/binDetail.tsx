@@ -90,7 +90,7 @@ export interface Item {
 const BinDetailsScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-   const { currentUser } = useAuth();
+  const { currentUser } = useAuth();
   
   // States
   const [bin, setBin] = useState<BinDetails | null>(null);
@@ -264,6 +264,8 @@ const BinDetailsScreen: React.FC = () => {
       setBinDescription(bin.description);
       setBinAddress(bin.address);
       setIsEditBinOpen(true);
+      console.log(bin);
+      setSelectedLocation(bin.location);
     }
   };
 
@@ -361,7 +363,6 @@ const BinDetailsScreen: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    setSelectedLocation(null);
     setIsUploading(false);
   }, [])
 
@@ -393,9 +394,9 @@ const BinDetailsScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -403,13 +404,21 @@ const BinDetailsScreen: React.FC = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/')}
-                className="p-2"
+                className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h1 className="text-xl font-semibold text-gray-900">Bin Details</h1>
+              <div>
+                <h1 className="text-xl font-semibold text-slate-900">Bin Details</h1>
+                <p className="text-xs text-slate-500">Manage your storage bin</p>
+              </div>
             </div>
-            <Button onClick={() => navigate('/')} variant="outline" size="sm">
+            <Button 
+              onClick={() => navigate('/')} 
+              variant="outline" 
+              size="sm"
+              className="rounded-xl border-slate-300 hover:bg-slate-50"
+            >
               Done
             </Button>
           </div>
@@ -419,28 +428,31 @@ const BinDetailsScreen: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           {/* Bin Information Card */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4">
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm rounded-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2"></div>
+            <CardHeader className="pb-6 pt-6">
               <div className="flex items-start justify-between">
-                <div className="space-y-2 flex-1">
-                  <h2 className="text-2xl font-bold text-gray-900">{bin.name}</h2>
-                  <p className="text-gray-600">{bin.description}</p>
-                  {bin.location && (
-                    <div className="flex items-center text-sm text-gray-500">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {bin.location.name}
+                <div className="space-y-3 flex-1">
+                  <h2 className="text-3xl font-bold text-slate-900">{bin.name}</h2>
+                  <p className="text-slate-600 text-lg leading-relaxed">{bin.description}</p>
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    {bin.location && (
+                      <div className="flex items-center text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        {bin.location.name}
+                      </div>
+                    )}
+                    <div className="flex items-center text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Created: {new Date(bin.createdAt).toLocaleDateString()}
                     </div>
-                  )}
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    Created: {new Date(bin.createdAt).toLocaleDateString()}
                   </div>
                 </div>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={handleEditBin}
-                  className="shrink-0"
+                  className="shrink-0 rounded-xl border-slate-300 hover:bg-slate-50 shadow-sm"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -453,41 +465,42 @@ const BinDetailsScreen: React.FC = () => {
           <div className="flex flex-wrap gap-4">
             <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
               <DialogTrigger asChild>
-                <Button className="flex-1 sm:flex-none">
+                <Button className="flex-1 sm:flex-none rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Item
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add New Item</DialogTitle>
+              <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
+                <DialogHeader className="pb-6">
+                  <DialogTitle className="text-2xl font-bold text-slate-900">Add New Item</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Image Upload */}
-                  <div className="space-y-2">
-                    <Label>Image</Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-slate-700">Image</Label>
+                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200">
                       {selectedImage ? (
                         <div className="space-y-4">
                           <img 
                             src={selectedImage} 
                             alt="Preview" 
-                            className="max-w-full h-32 object-cover rounded-lg mx-auto"
+                            className="max-w-full h-32 object-cover rounded-xl mx-auto shadow-sm"
                           />
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => setSelectedImage(null)}
+                            className="rounded-xl"
                           >
                             Remove Image
                           </Button>
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          <ImageIcon className="h-8 w-8 text-gray-400 mx-auto" />
+                        <div className="space-y-3">
+                          <ImageIcon className="h-8 w-8 text-slate-400 mx-auto" />
                           <div>
                             <label className="cursor-pointer">
-                              <span className="text-sm text-blue-600 hover:text-blue-500">
+                              <span className="text-sm text-blue-600 hover:text-blue-500 font-medium">
                                 Click to upload an image
                               </span>
                               <input
@@ -503,32 +516,39 @@ const BinDetailsScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="itemName">Name *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="itemName" className="text-sm font-medium text-slate-700">Name *</Label>
                     <Input
                       id="itemName"
                       value={itemName}
                       onChange={(e) => setItemName(e.target.value)}
                       placeholder="Enter item name"
+                      className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="itemDescription">Description</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="itemDescription" className="text-sm font-medium text-slate-700">Description</Label>
                     <Textarea
                       id="itemDescription"
                       value={itemDescription}
                       onChange={(e) => setItemDescription(e.target.value)}
                       placeholder="Enter item description"
                       rows={3}
+                      className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                     />
                   </div>
 
                   {/* Cantidad */}
-                  <div className="space-y-2">
-                    <Label htmlFor="itemQuantity">Quantity</Label>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="icon" onClick={decrementQuantity}>
+                  <div className="space-y-3">
+                    <Label htmlFor="itemQuantity" className="text-sm font-medium text-slate-700">Quantity</Label>
+                    <div className="flex items-center space-x-3">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={decrementQuantity}
+                        className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
+                      >
                         <Minus className="w-4 h-4" />
                       </Button>
                       <Input
@@ -537,17 +557,22 @@ const BinDetailsScreen: React.FC = () => {
                         min={0}
                         value={itemCuantity}
                         onChange={(e) => setItemCuantity(Number(e.target.value))}
-                        className="w-20 text-center"
+                        className="w-20 text-center rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                       />
-                      <Button variant="outline" size="icon" onClick={incrementQuantity}>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={incrementQuantity}
+                        className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
+                      >
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
 
                   {/* Valor */}
-                  <div className="space-y-2">
-                    <Label htmlFor="itemValue">Value</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="itemValue" className="text-sm font-medium text-slate-700">Value</Label>
                     <Input
                       id="itemValue"
                       type="number"
@@ -556,30 +581,36 @@ const BinDetailsScreen: React.FC = () => {
                       value={itemValue}
                       onChange={(e) => setItemValue(Number(e.target.value))}
                       placeholder="Enter item value"
+                      className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Tags</Label>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-slate-700">Tags</Label>
                     <div className="flex space-x-2">
                       <Input
                         value={newTag}
                         onChange={(e) => setNewTag(e.target.value)}
                         placeholder="Add a tag"
                         onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                        className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                       />
-                      <Button onClick={handleAddTag} size="sm">
+                      <Button 
+                        onClick={handleAddTag} 
+                        size="sm"
+                        className="rounded-xl"
+                      >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                     {itemTags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="flex flex-wrap gap-2 mt-3">
                         {itemTags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="pr-1">
+                          <Badge key={index} variant="secondary" className="pr-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200">
                             {tag}
                             <button
                               onClick={() => handleRemoveTag(tag)}
-                              className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                              className="ml-1 hover:bg-blue-300 rounded-full p-0.5 transition-colors"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -589,17 +620,22 @@ const BinDetailsScreen: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex justify-end space-x-2 pt-4">
+                  <div className="flex justify-end space-x-3 pt-6">
                     <Button 
                       variant="outline" 
                       onClick={() => {
                         setIsAddItemOpen(false);
                         resetItemForm();
                       }}
+                      className="rounded-xl border-slate-300 hover:bg-slate-50"
                     >
                       Cancel
                     </Button>
-                    <Button onClick={() => handleSubmitItem()} disabled={!itemName.trim()}>
+                    <Button 
+                      onClick={() => handleSubmitItem()} 
+                      disabled={!itemName.trim()}
+                      className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    >
                       Add Item
                     </Button>
                   </div>
@@ -609,21 +645,24 @@ const BinDetailsScreen: React.FC = () => {
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="flex-1 sm:flex-none">
+                <Button 
+                  variant="destructive" 
+                  className="flex-1 sm:flex-none rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Bin
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Bin</AlertDialogTitle>
-                  <AlertDialogDescription>
+                  <AlertDialogTitle className="text-xl font-bold text-slate-900">Delete Bin</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-600">
                     Are you sure you want to delete this bin? This action cannot be undone and will also delete all items in this bin.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+                  <AlertDialogCancel className="rounded-xl border-slate-300 hover:bg-slate-50">Cancel</AlertDialogCancel>
+                  <AlertDialogAction className="bg-red-600 hover:bg-red-700 rounded-xl">
                     Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -634,18 +673,23 @@ const BinDetailsScreen: React.FC = () => {
           {/* Items Section */}
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-2xl font-bold text-slate-900">
                 Items ({items.length})
               </h3>
             </div>
 
             {items.length === 0 ? (
-              <Card className="text-center py-12">
+              <Card className="text-center py-16 rounded-2xl border-0 shadow-lg bg-white/70 backdrop-blur-sm">
                 <CardContent>
-                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No items yet</h4>
-                  <p className="text-gray-500 mb-4">Add your first item to get started</p>
-                  <Button onClick={() => setIsAddItemOpen(true)}>
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Package className="h-10 w-10 text-blue-500" />
+                  </div>
+                  <h4 className="text-xl font-semibold text-slate-900 mb-3">No items yet</h4>
+                  <p className="text-slate-500 mb-6 max-w-md mx-auto">Add your first item to get started organizing your bin</p>
+                  <Button 
+                    onClick={() => setIsAddItemOpen(true)}
+                    className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Item
                   </Button>
@@ -654,29 +698,30 @@ const BinDetailsScreen: React.FC = () => {
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {items.map((item) => (
-                  <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="aspect-video bg-gray-100 relative">
+                  <Card key={item.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 rounded-2xl border-0 bg-white/70 backdrop-blur-sm group">
+                    <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden">
                       {item.imageUrl ? (
                         <img 
                           src={item.imageUrl} 
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="h-8 w-8 text-gray-400" />
+                          <ImageIcon className="h-12 w-12 text-slate-400" />
                         </div>
                       )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-gray-900 truncate flex-1">{item.name}</h4>
-                        <div className="flex space-x-1 ml-2">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="font-semibold text-slate-900 truncate flex-1 text-lg">{item.name}</h4>
+                        <div className="flex space-x-1 ml-3">
                           <Button 
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleEditItem(item)}
-                            className="p-1 h-8 w-8"
+                            className="p-2 h-8 w-8 rounded-lg hover:bg-slate-100"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -685,21 +730,21 @@ const BinDetailsScreen: React.FC = () => {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                className="p-1 h-8 w-8 text-red-600 hover:text-red-700"
+                                className="p-2 h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Item</AlertDialogTitle>
-                                <AlertDialogDescription>
+                                <AlertDialogTitle className="text-xl font-bold text-slate-900">Delete Item</AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-600">
                                   Are you sure you want to delete "{item.name}"? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+                                <AlertDialogCancel className="rounded-xl border-slate-300 hover:bg-slate-50">Cancel</AlertDialogCancel>
+                                <AlertDialogAction className="bg-red-600 hover:bg-red-700 rounded-xl">
                                   Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -708,12 +753,12 @@ const BinDetailsScreen: React.FC = () => {
                         </div>
                       </div>
                       
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                      <p className="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
                       
                       {item.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           {item.tags.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
+                            <Badge key={index} variant="outline" className="text-xs rounded-full border-slate-300 text-slate-600 hover:bg-slate-50">
                               {tag}
                             </Badge>
                           ))}
@@ -730,36 +775,37 @@ const BinDetailsScreen: React.FC = () => {
 
       {/* Edit Item Modal */}
       <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Item</DialogTitle>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="pb-6">
+            <DialogTitle className="text-2xl font-bold text-slate-900">Edit Item</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Similar form as Add Item but with update functionality */}
-            <div className="space-y-2">
-              <Label>Image</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-slate-700">Image</Label>
+              <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200">
                 {selectedImage ? (
                   <div className="space-y-4">
                     <img 
                       src={selectedImage} 
                       alt="Preview" 
-                      className="max-w-full h-32 object-cover rounded-lg mx-auto"
+                      className="max-w-full h-32 object-cover rounded-xl mx-auto shadow-sm"
                     />
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => setSelectedImage(null)}
+                      className="rounded-xl"
                     >
                       Remove Image
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <ImageIcon className="h-8 w-8 text-gray-400 mx-auto" />
+                  <div className="space-y-3">
+                    <ImageIcon className="h-8 w-8 text-slate-400 mx-auto" />
                     <div>
                       <label className="cursor-pointer">
-                        <span className="text-sm text-blue-600 hover:text-blue-500">
+                        <span className="text-sm text-blue-600 hover:text-blue-500 font-medium">
                           Click to upload an image
                         </span>
                         <input
@@ -775,83 +821,101 @@ const BinDetailsScreen: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="editItemName">Name *</Label>
+            <div className="space-y-3">
+              <Label htmlFor="editItemName" className="text-sm font-medium text-slate-700">Name *</Label>
               <Input
                 id="editItemName"
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
                 placeholder="Enter item name"
+                className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="editItemDescription">Description</Label>
+            <div className="space-y-3">
+              <Label htmlFor="editItemDescription" className="text-sm font-medium text-slate-700">Description</Label>
               <Textarea
                 id="editItemDescription"
                 value={itemDescription}
                 onChange={(e) => setItemDescription(e.target.value)}
                 placeholder="Enter item description"
                 rows={3}
+                className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
               />
             </div>
 
             {/* Cantidad */}
-                  <div className="space-y-2">
-                    <Label htmlFor="itemQuantity">Quantity</Label>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="icon" onClick={decrementQuantity}>
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <Input
-                        id="itemQuantity"
-                        type="number"
-                        min={0}
-                        value={itemCuantity}
-                        onChange={(e) => setItemCuantity(Number(e.target.value))}
-                        className="w-20 text-center"
-                      />
-                      <Button variant="outline" size="icon" onClick={incrementQuantity}>
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+            <div className="space-y-3">
+              <Label htmlFor="itemQuantity" className="text-sm font-medium text-slate-700">Quantity</Label>
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={decrementQuantity}
+                  className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
+                >
+                  <Minus className="w-4 h-4" />
+                </Button>
+                <Input
+                  id="itemQuantity"
+                  type="number"
+                  min={0}
+                  value={itemCuantity}
+                  onChange={(e) => setItemCuantity(Number(e.target.value))}
+                  className="w-20 text-center rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
+                />
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={incrementQuantity}
+                  className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
 
-                  {/* Valor */}
-                  <div className="space-y-2">
-                    <Label htmlFor="itemValue">Value</Label>
-                    <Input
-                      id="itemValue"
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={itemValue}
-                      onChange={(e) => setItemValue(Number(e.target.value))}
-                      placeholder="Enter item value"
-                    />
-                  </div>
+            {/* Valor */}
+            <div className="space-y-3">
+              <Label htmlFor="itemValue" className="text-sm font-medium text-slate-700">Value</Label>
+              <Input
+                id="itemValue"
+                type="number"
+                min={0}
+                step={0.01}
+                value={itemValue}
+                onChange={(e) => setItemValue(Number(e.target.value))}
+                placeholder="Enter item value"
+                className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
+              />
+            </div>
 
-            <div className="space-y-2">
-              <Label>Tags</Label>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-slate-700">Tags</Label>
               <div className="flex space-x-2">
                 <Input
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   placeholder="Add a tag"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                 />
-                <Button onClick={handleAddTag} size="sm">
+                <Button 
+                  onClick={handleAddTag} 
+                  size="sm"
+                  className="rounded-xl"
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               {itemTags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-3">
                   {itemTags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="pr-1">
+                    <Badge key={index} variant="secondary" className="pr-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200">
                       {tag}
                       <button
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                        className="ml-1 hover:bg-blue-300 rounded-full p-0.5 transition-colors"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -861,17 +925,22 @@ const BinDetailsScreen: React.FC = () => {
               )}
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-3 pt-6">
               <Button 
                 variant="outline" 
                 onClick={() => {
                   setIsEditItemOpen(false);
                   resetItemForm();
                 }}
+                className="rounded-xl border-slate-300 hover:bg-slate-50"
               >
                 Cancel
               </Button>
-              <Button onClick={() =>  handleUpdateItem()} disabled={!itemName.trim()}>
+              <Button 
+                onClick={() => handleUpdateItem()} 
+                disabled={!itemName.trim()}
+                className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              >
                 Update Item
               </Button>
             </div>
@@ -880,88 +949,108 @@ const BinDetailsScreen: React.FC = () => {
       </Dialog>
 
       {/* Edit Bin Modal */}
-       <Dialog open={isEditBinOpen} onOpenChange={setIsEditBinOpen}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Bin</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="binName">Name *</Label>
-            <Input
-              id="binName"
-              value={binName}
-              onChange={(e) => setBinName(e.target.value)}
-              placeholder="Enter bin name"
-            />
-          </div>
+      <Dialog open={isEditBinOpen} onOpenChange={setIsEditBinOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="pb-6">
+            <DialogTitle className="text-2xl font-bold text-slate-900">Edit Bin</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Name */}
+            <div className="space-y-3">
+              <Label htmlFor="binName" className="text-sm font-medium text-slate-700">Name *</Label>
+              <Input
+                id="binName"
+                value={binName}
+                onChange={(e) => setBinName(e.target.value)}
+                placeholder="Enter bin name"
+                className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
+              />
+            </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="binDescription">Description</Label>
-            <Textarea
-              id="binDescription"
-              value={binDescription}
-              onChange={(e) => setBinDescription(e.target.value)}
-              placeholder="Enter bin description"
-              rows={3}
-            />
-          </div>
+            {/* Description */}
+            <div className="space-y-3">
+              <Label htmlFor="binDescription" className="text-sm font-medium text-slate-700">Description</Label>
+              <Textarea
+                id="binDescription"
+                value={binDescription}
+                onChange={(e) => setBinDescription(e.target.value)}
+                placeholder="Enter bin description"
+                rows={3}
+                className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
+              />
+            </div>
 
-          {/* Address (si lo necesitas) */}
-          <div className="space-y-2">
-            <Label htmlFor="binAddress">Address</Label>
-            <Input
-              id="binAddress"
-              value={binAddress}
-              onChange={(e) => setBinAddress(e.target.value)}
-              placeholder="Enter bin address"
-            />
-          </div>
+            {/* Address */}
+            <div className="space-y-3">
+              <Label htmlFor="binAddress" className="text-sm font-medium text-slate-700">Address</Label>
+              <Input
+                id="binAddress"
+                value={binAddress}
+                onChange={(e) => setBinAddress(e.target.value)}
+                placeholder="Enter bin address"
+                className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
+              />
+            </div>
 
-          {/* Location */}
-          <div className="space-y-2">
-            <Label>Location { !selectedLocation && <span className="text-red-500">*</span> }</Label>
-            {!selectedLocation ? (
-              <Button variant="outline" onClick={() => {}}>
-                + Add Location
-              </Button>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" onClick={() =>{}}>
-                  Change Location
+            {/* Location */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-slate-700">Location {!selectedLocation && <span className="text-red-500">*</span>}</Label>
+              {!selectedLocation ? (
+                <>
+                {/*
+                <Button 
+                  variant="outline" 
+                  onClick={() => {}}
+                  className="rounded-xl border-slate-300 hover:bg-slate-50"
+                >
+                  + Add Location
                 </Button>
-                <div className="inline-flex items-center space-x-1 bg-gray-100 px-2 py-1 rounded">
-                  <MapPin className="w-4 h-4 text-gray-600" />
-                  <span>{selectedLocation?.name}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setIsEditBinOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              disabled={isUploading || !binName.trim()}
-              onClick={handleUpdateBin}
-            >
-              {isUploading ? (
-                <span className="flex items-center space-x-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Updating...</span>
-                </span>
+                */}
+                </>
               ) : (
-                'Update Bin'
+                <div className="flex items-center space-x-3">
+                  {/*<Button 
+                    variant="outline" 
+                    onClick={() => {}}
+                    className="rounded-xl border-slate-300 hover:bg-slate-50"
+                  >
+                    Change Location
+                  </Button>*/}
+                  <div className="inline-flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-full border border-blue-200">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-700 font-medium">{selectedLocation?.name}</span>
+                  </div>
+                </div>
               )}
-            </Button>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end space-x-3 pt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditBinOpen(false)}
+                className="rounded-xl border-slate-300 hover:bg-slate-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={isUploading || !binName.trim()}
+                onClick={handleUpdateBin}
+                className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              >
+                {isUploading ? (
+                  <span className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Updating...</span>
+                  </span>
+                ) : (
+                  'Update Bin'
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
