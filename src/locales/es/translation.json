@@ -1,0 +1,10 @@
+{
+  "auth": {
+    "signInTitle": "Inicia sesión en tu cuenta",
+    "signInSubtitle": "Elige tu método de inicio de sesión preferido",
+    "welcome": "Bienvenido de nuevo",
+    "continueWithGoogle": "Continuar con Google",
+    "continueWithApple": "Continuar con Apple",
+    "continueWithYahoo": "Continuar con Yahoo"
+  }
+}
