@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import BinDetailsPage from '@/pages/dashboard/binDetail';
 import { LocationsManager } from '@/pages/dashboard/Locations';
+import SocialScreen from '@/pages/dashboard/SocialScreen';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -83,6 +84,17 @@ const router = createBrowserRouter([
             </ProtectedRoute>
         ),
     },
+
+    {
+        path: '/impersonate',
+        element: (
+            <ProtectedRoute>
+                <SocialScreen />
+            </ProtectedRoute>
+        ),
+    },
+
+    
 ]);
 
 export default function Routes() {

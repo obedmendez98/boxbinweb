@@ -96,5 +96,16 @@
     "previous": "Previous",
     "next": "Next",
     "showing": "Showing {{count}} {{type}}"
+  },
+   "shareAccess": {
+    "title": "Share Access",
+    "addNew": "Add New",
+    "sharedWithMe": "Shared With Me",
+    "sharedByMe": "Shared By Me",
+    "noAccountsSharedWithYou": "No accounts have been shared with you",
+    "noAccountsSharedByYou": "You haven't shared accounts with anyone",
+    "inputPlaceholder": "Enter username or email",
+    "cancel": "Cancel",
+    "share": "Share"
   }
 }

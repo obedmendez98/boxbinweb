@@ -96,5 +96,16 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "showing": "Mostrando {{count}} {{type}}"
+  },
+   "shareAccess": {
+    "title": "Compartir Acceso",
+    "addNew": "Agregar Nuevo",
+    "sharedWithMe": "Compartido Conmigo",
+    "sharedByMe": "Compartido Por Mí",
+    "noAccountsSharedWithYou": "No hay cuentas compartidas contigo",
+    "noAccountsSharedByYou": "No has compartido cuentas con nadie",
+    "inputPlaceholder": "Ingresa el nombre de usuario o email",
+    "cancel": "Cancelar",
+    "share": "Compartir"
   }
 }
