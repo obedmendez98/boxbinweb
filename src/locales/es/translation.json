@@ -7,6 +7,14 @@
     "continueWithApple": "Continuar con Apple",
     "continueWithYahoo": "Continuar con Yahoo"
   },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "locations": "Ubicaciones",
+    "new": "Nuevo",
+    "user": "Usuario",
+    "logout": "Cerrar sesión",
+    "language": "Idioma"
+  },
   "dashboard": {
     "loading": "Cargando panel...",
     "title": "Resumen de Inventario",
@@ -35,23 +43,6 @@
     "emptySearchHint": "Prueba ajustando tus términos de búsqueda para encontrar lo que buscas"
   },
   "locations": {
-    "empty": "Aún no hay ubicaciones",
-    "emptySearch": "No se encontraron ubicaciones",
-    "emptyHint": "Crea tu primera ubicación para organizar mejor tus contenedores",
-    "emptySearchHint": "Prueba ajustando tus términos de búsqueda",
-    "createFirst": "Crear primera ubicación"
-  },
-  "actions": {
-    "clearFilter": "Quitar filtro"
-  },
-  "pagination": {
-    "previous": "Anterior",
-    "next": "Siguiente",
-    "showing": "Mostrando {{count}} {{type}}"
-  },
-  "locations": {
-    "confirmDelete": "¿Estás seguro de que quieres eliminar esta ubicación?",
-    "mustSignIn": "Por favor, inicia sesión para acceder a tus ubicaciones",
     "title": "Ubicaciones",
     "subtitle": "Administra todas tus ubicaciones",
     "refresh": "Recargar",
@@ -69,12 +60,14 @@
     "hintEmpty": "Agrega tu primera ubicación para organizar mejor tus artículos",
     "hintSearch": "Prueba diferentes términos de búsqueda",
     "createFirst": "Crear primera ubicación",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar esta ubicación?",
+    "mustSignIn": "Por favor, inicia sesión para acceder a tus ubicaciones",
+    "deleted": "Ubicación eliminada correctamente",
+    "deleteError": "Error al eliminar la ubicación",
     "alert": {
       "success": "{{message}}",
       "error": "{{message}}"
     },
-    "deleted": "Ubicación eliminada correctamente",
-    "deleteError": "Error al eliminar la ubicación",
     "modal": {
       "newTitle": "Nueva Ubicación",
       "editTitle": "Editar Ubicación"
@@ -96,10 +89,12 @@
   "actions": {
     "cancel": "Cancelar",
     "edit": "Editar",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "clearFilter": "Quitar filtro"
   },
   "pagination": {
     "previous": "Anterior",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "showing": "Mostrando {{count}} {{type}}"
   }
 }

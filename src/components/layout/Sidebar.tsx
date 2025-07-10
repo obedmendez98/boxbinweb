@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   LogOut,
@@ -17,31 +18,33 @@ import {
 import { useState } from "react";
 import { logoutUser } from "@/lib/firebase";
 import LogoIcon from "@/assets/logo.png";
+import { LanguageSelector } from "./LanguageSelector";
 
 interface SidebarProps {
   className?: string;
 }
 
-const sidebarItems = [
-  {
-    title: "Dashboard",
-    href: "/home",
-    icon: Home,
-    badge: null,
-  },
-  {
-    title: "Locations",
-    href: "/locations",
-    icon: MapPin,
-    badge: "New",
-  },
-];
-
 export function Sidebar({ className }: SidebarProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+
+  const sidebarItems = [
+    {
+      title: t('sidebar.dashboard'),
+      href: "/home",
+      icon: Home,
+      badge: null,
+    },
+    {
+      title: t('sidebar.locations'),
+      href: "/locations",
+      icon: MapPin,
+      badge: t('sidebar.new'),
+    },
+  ];
 
   const handleLogout = async () => {
     try {
@@ -71,7 +74,7 @@ export function Sidebar({ className }: SidebarProps) {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Dashboard
+                {t('sidebar.dashboard')}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 v2.0
@@ -154,6 +157,10 @@ export function Sidebar({ className }: SidebarProps) {
             );
           })}
         </nav>
+
+        {/* Language Selector */}
+        <Separator className="my-6 bg-slate-200 dark:bg-slate-700" />
+        <LanguageSelector collapsed={collapsed} />
       </ScrollArea>
 
       <Separator className="bg-slate-200 dark:bg-slate-700" />
@@ -168,7 +175,7 @@ export function Sidebar({ className }: SidebarProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                {currentUser.displayName || 'Usuario'}
+                {currentUser.displayName || t('sidebar.user')}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                 {currentUser.email}
@@ -187,12 +194,12 @@ export function Sidebar({ className }: SidebarProps) {
           onClick={handleLogout}
         >
           <LogOut className={cn("h-5 w-5", !collapsed && "mr-3")} />
-          {!collapsed && <span className="font-medium">Cerrar sesión</span>}
+          {!collapsed && <span className="font-medium">{t('sidebar.logout')}</span>}
           
           {/* Tooltip para modo colapsado */}
           {collapsed && (
             <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-              Cerrar sesión
+              {t('sidebar.logout')}
             </div>
           )}
         </Button>

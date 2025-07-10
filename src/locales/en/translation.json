@@ -7,16 +7,24 @@
     "continueWithApple": "Continue with Apple",
     "continueWithYahoo": "Continue with Yahoo"
   },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "locations": "Locations",
+    "new": "New",
+    "user": "User",
+    "logout": "Logout",
+    "language": "Language"
+  },
   "dashboard": {
     "loading": "Loading dashboard...",
     "title": "Inventory Overview",
-    "subtitle": "Manage your inventory bins and locations efficiently",
-    "totalBins": "Total Bins",
+    "subtitle": "Manage your containers and locations efficiently",
+    "totalBins": "Total Containers",
     "locations": "Locations",
     "totalItems": "Total Items",
     "filteringByLocation": "Filtering by location:",
     "tabs": {
-      "bins": "Bins ({{count}})",
+      "bins": "Containers ({{count}})",
       "locations": "Locations ({{count}})"
     }
   },
@@ -25,33 +33,16 @@
     "list": "List"
   },
   "search": {
-    "binsPlaceholder": "Search bins and items...",
+    "binsPlaceholder": "Search containers or items...",
     "locationsPlaceholder": "Search locations..."
   },
   "bins": {
-    "empty": "No bins yet",
-    "emptySearch": "No bins found",
-    "emptyHint": "Create your first bin to start organizing your inventory",
+    "empty": "No containers yet",
+    "emptySearch": "No containers found",
+    "emptyHint": "Create your first container to organize your inventory",
     "emptySearchHint": "Try adjusting your search terms to find what you're looking for"
   },
   "locations": {
-    "empty": "No locations yet",
-    "emptySearch": "No locations found",
-    "emptyHint": "Create your first location to better organize your bins",
-    "emptySearchHint": "Try adjusting your search terms",
-    "createFirst": "Create First Location"
-  },
-  "actions": {
-    "clearFilter": "Clear filter"
-  },
-  "pagination": {
-    "previous": "Previous",
-    "next": "Next",
-    "showing": "Showing {{count}} {{type}}"
-  },
-  "locations": {
-    "confirmDelete": "Are you sure you want to delete this location?",
-    "mustSignIn": "Please sign in to access your locations",
     "title": "Locations",
     "subtitle": "Manage all your locations",
     "refresh": "Refresh",
@@ -66,15 +57,17 @@
     },
     "empty": "No locations yet",
     "emptySearch": "No locations found",
-    "hintEmpty": "Start by adding your first location to better organize your items",
+    "hintEmpty": "Add your first location to better organize your items",
     "hintSearch": "Try different search terms",
-    "createFirst": "Create First Location",
+    "createFirst": "Create first location",
+    "confirmDelete": "Are you sure you want to delete this location?",
+    "mustSignIn": "Please sign in to access your locations",
+    "deleted": "Location deleted successfully",
+    "deleteError": "Error deleting location",
     "alert": {
       "success": "{{message}}",
       "error": "{{message}}"
     },
-    "deleted": "Location deleted successfully",
-    "deleteError": "Error deleting the location",
     "modal": {
       "newTitle": "New Location",
       "editTitle": "Edit Location"
@@ -86,7 +79,7 @@
     "description": "Description",
     "optional": "optional",
     "namePlaceholder": "Ex: Main Office",
-    "addressPlaceholder": "Ex: 123 Reform Ave, Mexico City",
+    "addressPlaceholder": "Ex: 123 Main St, New York",
     "descriptionPlaceholder": "Location description...",
     "creating": "Creating...",
     "create": "Create Location",
@@ -96,10 +89,12 @@
   "actions": {
     "cancel": "Cancel",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "clearFilter": "Clear filter"
   },
   "pagination": {
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "showing": "Showing {{count}} {{type}}"
   }
 }
