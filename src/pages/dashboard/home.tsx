@@ -25,6 +25,7 @@ import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'f
 import { useNavigate } from 'react-router-dom';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -67,6 +68,8 @@ interface PaginationState {
 
 export default function HomeScreen() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'bins' | 'locations' | any>('bins');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -505,7 +508,7 @@ export default function HomeScreen() {
           <div className="flex justify-center items-center min-h-96">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-200 border-t-emerald-600"></div>
-              <p className="text-slate-600">Loading dashboard...</p>
+               <p className="text-slate-600">{t('dashboard.loading')}</p>
             </div>
           </div>
         </div>
@@ -513,7 +516,7 @@ export default function HomeScreen() {
     );
   }
 
-  return (
+   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 relative">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Header con estadísticas */}
@@ -521,9 +524,9 @@ export default function HomeScreen() {
           <div className="flex items-center justify-between mb-8">
             <div className="space-y-1">
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                Inventory Overview
+                {t('dashboard.title')}
               </h1>
-              <p className="text-gray-600">Manage your inventory bins and locations efficiently</p>
+              <p className="text-gray-600">{t('dashboard.subtitle')}</p>
             </div>
           </div>
 
@@ -533,7 +536,9 @@ export default function HomeScreen() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">Total Bins</p>
+                    <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">
+                      {t('dashboard.totalBins')}
+                    </p>
                     <p className="text-3xl font-bold text-gray-900">{stats.totalBins}</p>
                   </div>
                   <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -547,7 +552,9 @@ export default function HomeScreen() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-blue-600 uppercase tracking-wide">Locations</p>
+                    <p className="text-sm font-medium text-blue-600 uppercase tracking-wide">
+                      {t('dashboard.locations')}
+                    </p>
                     <p className="text-3xl font-bold text-gray-900">{stats.totalLocations}</p>
                   </div>
                   <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -561,7 +568,9 @@ export default function HomeScreen() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-purple-600 uppercase tracking-wide">Total Items</p>
+                    <p className="text-sm font-medium text-purple-600 uppercase tracking-wide">
+                      {t('dashboard.totalItems')}
+                    </p>
                     <p className="text-3xl font-bold text-gray-900">{stats.totalItems}</p>
                   </div>
                   <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -577,22 +586,22 @@ export default function HomeScreen() {
           {/* Tab navigation y controles */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <TabsList className="grid w-96 grid-cols-2 h-12 bg-gray-100 p-1 rounded-xl">
-              <TabsTrigger 
-                value="bins" 
+              <TabsTrigger
+                value="bins"
                 className="flex items-center gap-3 font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
               >
                 <Package className="w-5 h-5" />
-                Bins ({stats.totalBins})
+                {t('dashboard.tabs.bins', { count: stats.totalBins })}
               </TabsTrigger>
-              <TabsTrigger 
-                value="locations" 
+              <TabsTrigger
+                value="locations"
                 className="flex items-center gap-3 font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
               >
                 <MapPin className="w-5 h-5" />
-                Locations ({stats.totalLocations})
+                {t('dashboard.tabs.locations', { count: stats.totalLocations })}
               </TabsTrigger>
             </TabsList>
-            
+
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -601,7 +610,7 @@ export default function HomeScreen() {
                 className="h-10 px-4 hover:bg-gray-50 transition-colors duration-200"
               >
                 {viewMode === 'grid' ? <List className="w-4 h-4 mr-2" /> : <Grid className="w-4 h-4 mr-2" />}
-                {viewMode === 'grid' ? 'List' : 'Grid'}
+                {t(`view.${viewMode}`)}
               </Button>
             </div>
           </div>
@@ -612,7 +621,7 @@ export default function HomeScreen() {
             <Input
               value={currentSearchText}
               onChange={(e) => setCurrentSearchText(e.target.value)}
-              placeholder={activeTab === 'bins' ? 'Search bins and items...' : 'Search locations...'}
+              placeholder={t(`search.${activeTab}Placeholder`)}
               className="pl-11 pr-12 h-11 bg-white border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 rounded-lg transition-all duration-200"
             />
             {currentSearchText && (
@@ -637,13 +646,13 @@ export default function HomeScreen() {
                       <Filter className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-900">Filtering by location:</span>
+                      <span className="font-semibold text-blue-900">{t('dashboard.filteringByLocation')}</span>
                       <span className="ml-2 text-blue-700 font-medium">{filterLocation.name}</span>
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={clearLocationFilter} className="hover:bg-blue-100 text-blue-600">
                     <X className="w-4 h-4 mr-2" />
-                    Clear filter
+                    {t('actions.clearFilter')}
                   </Button>
                 </div>
               </CardContent>
@@ -659,12 +668,11 @@ export default function HomeScreen() {
                     <Package className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {searchTextBins ? 'No bins found' : 'No bins yet'}
+                    {searchTextBins ? t('bins.emptySearch') : t('bins.empty')}
                   </h3>
                   <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                    {searchTextBins ? 'Try adjusting your search terms to find what you\'re looking for' : 'Create your first bin to start organizing your inventory'}
+                    {searchTextBins ? t('bins.emptySearchHint') : t('bins.emptyHint')}
                   </p>
-                  
                 </CardContent>
               </Card>
             ) : (
@@ -688,15 +696,15 @@ export default function HomeScreen() {
                     <MapPin className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {searchTextLocations ? 'No locations found' : 'No locations yet'}
+                    {searchTextLocations ? t('locations.emptySearch') : t('locations.empty')}
                   </h3>
                   <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                    {searchTextLocations ? 'Try adjusting your search terms' : 'Create your first location to better organize your bins'}
+                    {searchTextLocations ? t('locations.emptySearchHint') : t('locations.emptyHint')}
                   </p>
                   {!searchTextLocations && (
                     <Button onClick={() => navigate('/add-location')} className="bg-blue-600 hover:bg-blue-700">
                       <Plus className="w-4 h-4 mr-2" />
-                      Create First Location
+                      {t('locations.createFirst')}
                     </Button>
                   )}
                 </CardContent>
@@ -719,25 +727,15 @@ export default function HomeScreen() {
         {currentData.length > 0 && (
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Showing {currentData.length} {activeTab === 'bins' ? 'bins' : 'locations'}
+              {t('pagination.showing', { count: currentData.length, type: activeTab })}
             </p>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={loading}
-                className="hover:bg-gray-50"
-              >
+              <Button variant="outline" size="sm" disabled={loading} className="hover:bg-gray-50">
                 <ChevronLeft className="w-4 h-4 mr-1" />
-                Previous
+                {t('pagination.previous')}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={loading}
-                className="hover:bg-gray-50"
-              >
-                Next
+              <Button variant="outline" size="sm" disabled={loading} className="hover:bg-gray-50">
+                {t('pagination.next')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>

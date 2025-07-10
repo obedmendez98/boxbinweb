@@ -6,5 +6,100 @@
     "continueWithGoogle": "Continuar con Google",
     "continueWithApple": "Continuar con Apple",
     "continueWithYahoo": "Continuar con Yahoo"
+  },
+  "dashboard": {
+    "loading": "Cargando panel...",
+    "title": "Resumen de Inventario",
+    "subtitle": "Administra tus contenedores y ubicaciones eficientemente",
+    "totalBins": "Total de Contenedores",
+    "locations": "Ubicaciones",
+    "totalItems": "Total de Artículos",
+    "filteringByLocation": "Filtrando por ubicación:",
+    "tabs": {
+      "bins": "Contenedores ({{count}})",
+      "locations": "Ubicaciones ({{count}})"
+    }
+  },
+  "view": {
+    "grid": "Cuadrícula",
+    "list": "Lista"
+  },
+  "search": {
+    "binsPlaceholder": "Buscar contenedores o artículos...",
+    "locationsPlaceholder": "Buscar ubicaciones..."
+  },
+  "bins": {
+    "empty": "Aún no hay contenedores",
+    "emptySearch": "No se encontraron contenedores",
+    "emptyHint": "Crea tu primer contenedor para organizar tu inventario",
+    "emptySearchHint": "Prueba ajustando tus términos de búsqueda para encontrar lo que buscas"
+  },
+  "locations": {
+    "empty": "Aún no hay ubicaciones",
+    "emptySearch": "No se encontraron ubicaciones",
+    "emptyHint": "Crea tu primera ubicación para organizar mejor tus contenedores",
+    "emptySearchHint": "Prueba ajustando tus términos de búsqueda",
+    "createFirst": "Crear primera ubicación"
+  },
+  "actions": {
+    "clearFilter": "Quitar filtro"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "showing": "Mostrando {{count}} {{type}}"
+  },
+  "locations": {
+    "confirmDelete": "¿Estás seguro de que quieres eliminar esta ubicación?",
+    "mustSignIn": "Por favor, inicia sesión para acceder a tus ubicaciones",
+    "title": "Ubicaciones",
+    "subtitle": "Administra todas tus ubicaciones",
+    "refresh": "Recargar",
+    "count": "ubicaciones",
+    "new": "Nueva Ubicación",
+    "searchPlaceholder": "Buscar por nombre, dirección o descripción...",
+    "sort": {
+      "name": "Nombre",
+      "date": "Fecha",
+      "asc": "A-Z",
+      "desc": "Z-A"
+    },
+    "empty": "Aún no hay ubicaciones",
+    "emptySearch": "No se encontraron ubicaciones",
+    "hintEmpty": "Agrega tu primera ubicación para organizar mejor tus artículos",
+    "hintSearch": "Prueba diferentes términos de búsqueda",
+    "createFirst": "Crear primera ubicación",
+    "alert": {
+      "success": "{{message}}",
+      "error": "{{message}}"
+    },
+    "deleted": "Ubicación eliminada correctamente",
+    "deleteError": "Error al eliminar la ubicación",
+    "modal": {
+      "newTitle": "Nueva Ubicación",
+      "editTitle": "Editar Ubicación"
+    }
+  },
+  "form": {
+    "name": "Nombre",
+    "address": "Dirección",
+    "description": "Descripción",
+    "optional": "opcional",
+    "namePlaceholder": "Ej: Oficina Principal",
+    "addressPlaceholder": "Ej: Av. Reforma 123, CDMX",
+    "descriptionPlaceholder": "Descripción de la ubicación...",
+    "creating": "Creando...",
+    "create": "Crear Ubicación",
+    "updating": "Actualizando...",
+    "update": "Actualizar Ubicación"
+  },
+  "actions": {
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente"
   }
 }
