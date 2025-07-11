@@ -4,7 +4,7 @@ import { initReactI18next } from 'react-i18next'
 import translationEN from './locales/en/translation.json'
 import translationES from './locales/es/translation.json'
 
-const savedLanguage = localStorage.getItem('lang') || 'es'
+const savedLanguage = localStorage.getItem('lang') || 'en'
 
 const resources = {
   en: { translation: translationEN },
