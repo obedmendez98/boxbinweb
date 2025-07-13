@@ -67,13 +67,22 @@ interface PaginationState {
 }
 
 export default function HomeScreen() {
+
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  // Auth & impersonation
+  const { currentUser } = useAuth();
+  const [userImpersonated, setUserImpersonated] = useState<any>(
+    () => JSON.parse(localStorage.getItem('impersonatedUser') || 'null')
+  );
+  const effectiveUserId = userImpersonated?.ownerUserId || currentUser?.uid;
+
+  // UI state
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'bins' | 'locations' | any>('bins');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
+
   // Bins state
   const [bins, setBins] = useState<Bin[]>([]);
   const [filteredBins, setFilteredBins] = useState<Bin[]>([]);
@@ -100,12 +109,16 @@ export default function HomeScreen() {
     totalCount: 0
   });
 
-  // Items state
-  //const [items, setItems] = useState<Item[]>([]);
+  // Filter state
   const [filterLocation, setFilterLocation] = useState<Location | null>(null);
 
-  // User context (simplified for this example)
-  const { currentUser } = useAuth();
+  // Stats state
+  const [stats, setStats] = useState({
+    totalBins: 0,
+    totalLocations: 0,
+    totalItems: 0,
+    recentActivity: 0
+  });
 
   const normalizeText = (text: any) =>
     (text || '')
@@ -113,80 +126,57 @@ export default function HomeScreen() {
       .trim()
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+      .replace(/[̀-\u036f]/g, '');
 
-  // Fetch bins with pagination
-  const fetchBins = async (page: number = 1, searchTerm: string = '', isNextPage: boolean = false, isPreviousPage: boolean = false) => {
-    if (!currentUser?.uid) return;
-    console.log(locations);
+  // --- FETCH FUNCTIONS using effectiveUserId ---
+  const fetchBins = async (
+    page: number = 1,
+    searchTerm: string = '',
+    isNextPage: boolean = false,
+    isPreviousPage: boolean = false
+  ) => {
+    if (!effectiveUserId) return;
     setLoading(true);
-    
+
+    console.log(isPreviousPage);
     try {
       let binsQuery = query(
         collection(db, 'bins'),
-        where('userId', '==', currentUser?.uid),
+        where('userId', '==', effectiveUserId),
         orderBy('createdAt', 'desc'),
         limit(ITEMS_PER_PAGE)
       );
 
       if (isNextPage && binsPagination.lastVisible) {
         binsQuery = query(
-          collection(db, 'bins'),
-          where('userId', '==', currentUser?.uid),
-          orderBy('createdAt', 'desc'),
-          startAfter(binsPagination.lastVisible),
-          limit(ITEMS_PER_PAGE)
-        );
-      } else if (isPreviousPage && binsPagination.firstVisible) {
-        // For previous page, we need to reverse the order and take the previous documents
-        binsQuery = query(
-          collection(db, 'bins'),
-          where('userId', '==', currentUser?.uid),
-          orderBy('createdAt', 'desc'),
-          limit(ITEMS_PER_PAGE)
+          binsQuery,
+          startAfter(binsPagination.lastVisible)
         );
       }
 
       const snapshot = await getDocs(binsQuery);
-      const binsData = snapshot.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Bin[];
+      const binsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bin));
 
-      console.log(binsData, " d")
-
-      // Get QR codes for bins
+      // Attach QR codes
       const binsWithQRCodes = await Promise.all(
-        binsData.map(async (bin) => {
+        binsData.map(async bin => {
           if (!bin.qrGuid) return bin;
-          const qrSnapshot = await getDocs(
-            query(
-              collection(db, 'qrcodes'),
-              where('guid', '==', bin.qrGuid)
-            )
+          const qrSnap = await getDocs(
+            query(collection(db, 'qrcodes'), where('guid', '==', bin.qrGuid))
           );
-          if (!qrSnapshot.empty) {
-            const qrData = qrSnapshot.docs[0].data();
-            return { ...bin, qrcodeId: qrData?.qrcodeId };
-          }
-          return bin;
+          return qrSnap.empty ? bin : { ...bin, qrcodeId: qrSnap.docs[0].data().qrcodeId };
         })
       );
 
       setBins(binsWithQRCodes);
-      
-      // Filter by search term if provided
-      const filtered = searchTerm 
+      const filtered = searchTerm
         ? binsWithQRCodes.filter(bin => 
-            normalizeText(bin.name).includes(normalizeText(searchTerm)) ||
-            normalizeText(bin.description).includes(normalizeText(searchTerm)) ||
-            normalizeText(bin.qrcodeId).includes(normalizeText(searchTerm))
+            [bin.name, bin.description, bin.qrcodeId]
+              .some(field => normalizeText(field).includes(normalizeText(searchTerm)))
           )
         : binsWithQRCodes;
-      
       setFilteredBins(filtered);
 
-      // Update pagination state
       setBinsPagination({
         currentPage: page,
         hasNextPage: snapshot.docs.length === ITEMS_PER_PAGE,
@@ -195,7 +185,6 @@ export default function HomeScreen() {
         firstVisible: snapshot.docs[0] || null,
         totalCount: filtered.length
       });
-
     } catch (error) {
       console.error('Error fetching bins:', error);
     } finally {
@@ -203,48 +192,35 @@ export default function HomeScreen() {
     }
   };
 
-  // Fetch locations with pagination
-  const fetchLocations = async (page: number = 1, searchTerm: string = '', isNextPage: boolean = false) => {
-    if (!currentUser?.uid) return;
-    
+  const fetchLocations = async (
+    page: number = 1,
+    searchTerm: string = '',
+    isNextPage: boolean = false
+  ) => {
+    if (!effectiveUserId) return;
     setLoading(true);
-    
+
     try {
-      let locationsQuery = query(
+      let locQuery = query(
         collection(db, 'locations'),
-        where('userId', '==', currentUser.uid),
+        where('userId', '==', effectiveUserId),
         orderBy('createdAt', 'desc'),
         limit(ITEMS_PER_PAGE)
       );
 
       if (isNextPage && locationsPagination.lastVisible) {
-        locationsQuery = query(
-          collection(db, 'locations'),
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc'),
-          startAfter(locationsPagination.lastVisible),
-          limit(ITEMS_PER_PAGE)
-        );
+        locQuery = query(locQuery, startAfter(locationsPagination.lastVisible));
       }
 
-      const snapshot = await getDocs(locationsQuery);
-      const locationsData = snapshot.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Location[];
+      const snapshot = await getDocs(locQuery);
+      const locData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
 
-      setLocations(locationsData);
-      
-      // Filter by search term if provided
-      const filtered = searchTerm 
-        ? locationsData.filter(location => 
-            normalizeText(location.name).includes(normalizeText(searchTerm))
-          )
-        : locationsData;
-      
+      setLocations(locData);
+      const filtered = searchTerm
+        ? locData.filter(loc => normalizeText(loc.name).includes(normalizeText(searchTerm)))
+        : locData;
       setFilteredLocations(filtered);
 
-      // Update pagination state
       setLocationsPagination({
         currentPage: page,
         hasNextPage: snapshot.docs.length === ITEMS_PER_PAGE,
@@ -253,7 +229,6 @@ export default function HomeScreen() {
         firstVisible: snapshot.docs[0] || null,
         totalCount: filtered.length
       });
-
     } catch (error) {
       console.error('Error fetching locations:', error);
     } finally {
@@ -261,47 +236,68 @@ export default function HomeScreen() {
     }
   };
 
-  // Search effect for bins
+  const fetchStats = async () => {
+    if (!effectiveUserId) return;
+
+    try {
+      const [binsSnap, itemsSnap, locSnap] = await Promise.all([
+        getDocs(query(collection(db, 'bins'), where('userId', '==', effectiveUserId))),
+        getDocs(query(collection(db, 'items'), where('userId', '==', effectiveUserId))),
+        getDocs(query(collection(db, 'locations'), where('userId', '==', effectiveUserId)))
+      ]);
+
+      setStats({
+        totalBins: binsSnap.size,
+        totalItems: itemsSnap.size,
+        totalLocations: locSnap.size,
+        recentActivity: 0
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  // --- EFFECTS ---
+  // Initial and impersonation reload
+  useEffect(() => {
+    if (activeTab === 'bins') fetchBins();
+    else fetchLocations();
+    fetchStats();
+
+    console.log('activeTab', userImpersonated);
+    console.log(locations)
+  
+  }, [activeTab, effectiveUserId]);
+
+  // Search effects
   useEffect(() => {
     if (activeTab === 'bins') {
-      const delayedSearch = setTimeout(() => {
-        fetchBins(1, searchTextBins);
-      }, 300);
-      return () => clearTimeout(delayedSearch);
+      const timer = setTimeout(() => fetchBins(1, searchTextBins), 300);
+      return () => clearTimeout(timer);
     }
-  }, [searchTextBins, activeTab]);
+  }, [searchTextBins, activeTab, effectiveUserId]);
 
-  // Search effect for locations
   useEffect(() => {
     if (activeTab === 'locations') {
-      const delayedSearch = setTimeout(() => {
-        fetchLocations(1, searchTextLocations);
-      }, 300);
-      return () => clearTimeout(delayedSearch);
+      const timer = setTimeout(() => fetchLocations(1, searchTextLocations), 300);
+      return () => clearTimeout(timer);
     }
-  }, [searchTextLocations, activeTab]);
-
-  // Initial load
-  useEffect(() => {
-    if (activeTab === 'bins') {
-      fetchBins();
-    } else {
-      fetchLocations();
-    }
-  }, [activeTab]);
+  }, [searchTextLocations, activeTab, effectiveUserId]);
 
   const handleLocationFilter = (location: Location) => {
     setActiveTab('bins');
     setFilterLocation(location);
-    const filteredBinsByLocation = bins.filter(bin => 
-      bin.location && bin.location.id === location.id
-    );
-    setFilteredBins(filteredBinsByLocation);
+    setFilteredBins(bins.filter(bin => bin.location?.id === location.id));
   };
 
   const clearLocationFilter = () => {
     setFilterLocation(null);
     fetchBins(1, searchTextBins);
+  };
+
+  const clearImpersonation = () => {
+    localStorage.removeItem('impersonatedUser');
+    setUserImpersonated(null);
   };
 
   const renderBinCard = (bin: any) => (
@@ -450,52 +446,6 @@ export default function HomeScreen() {
     );
   }
 
-  const [stats, setStats] = useState({
-    totalBins: 0,
-    totalLocations: 0,
-    totalItems: 0,
-    recentActivity: 0
-  });
-
-  const fetchStats = async () => {
-    if (!currentUser?.uid) return;
-
-    try {
-      const binsSnapshot = await getDocs(
-        query(collection(db, 'bins'), where('userId', '==', currentUser.uid))
-      );
-      const binsData = binsSnapshot.docs.map((doc) => doc.data());
-
-      const totalBins = binsData.length;
-
-      const itemsSnapshot = await getDocs(
-        query(collection(db, 'items'), where('userId', '==', currentUser.uid))
-      );
-      const itemsData = itemsSnapshot.docs.map((doc) => doc.data());
-
-      const totalItems = itemsData.length;
-
-      const locationsSnapshot = await getDocs(
-        query(collection(db, 'locations'), where('userId', '==', currentUser.uid))
-      );
-      const totalLocations = locationsSnapshot.docs.map((doc) => doc.data()).length;
-
-      setStats({
-        totalBins,
-        totalLocations,
-        totalItems,
-        recentActivity: 0 
-      });
-
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
   //const currentPagination = activeTab === 'bins' ? binsPagination : locationsPagination;
   const currentData = activeTab === 'bins' ? filteredBins : filteredLocations;
   const currentSearchText = activeTab === 'bins' ? searchTextBins : searchTextLocations;
@@ -528,6 +478,19 @@ export default function HomeScreen() {
               </h1>
               <p className="text-gray-600">{t('dashboard.subtitle')}</p>
             </div>
+            {userImpersonated && (
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-500">
+                  {t('dashboard.by')} <strong>{userImpersonated?.ownerUsername}</strong>
+                </span>
+                <button
+                  onClick={clearImpersonation}
+                  className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
+                >
+                  {t('dashboard.stopImpersonation')}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Stats cards */}

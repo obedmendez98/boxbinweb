@@ -9,9 +9,11 @@ import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, query, where }
 import { ChevronRight, Loader2, Mail, Plus, Search, Share2, Shield, Trash2, UserCheck, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 export default function SocialScreen() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const { currentUser } = useAuth();
 
@@ -146,7 +148,8 @@ export default function SocialScreen() {
   const viewSharedInventory = (sharedAccount: any) => {
     // Guardar en localStorage en lugar de usar setImpersonatedUser
     localStorage.setItem('impersonatedUser', JSON.stringify(sharedAccount));
-
+    console.log('Usuario a impersonar:', sharedAccount);
+    navigate(`/home`);
   };
 
   const handleRevokeAccess = async (accountId: any, accountName: any) => {

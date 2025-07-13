@@ -26,7 +26,9 @@
     "tabs": {
       "bins": "Containers ({{count}})",
       "locations": "Locations ({{count}})"
-    }
+    },
+    "by": "by",
+  "stopImpersonation": "Stop Impersonation"
   },
   "view": {
     "grid": "Grid",
