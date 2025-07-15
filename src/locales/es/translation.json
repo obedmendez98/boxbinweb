@@ -18,6 +18,8 @@
   "dashboard": {
     "loading": "Cargando panel...",
     "title": "Resumen de Inventario",
+    "by": "por",
+    "stopImpersonation": "Detener suplantación",
     "subtitle": "Administra tus contenedores y ubicaciones eficientemente",
     "totalBins": "Total de Contenedores",
     "locations": "Ubicaciones",
