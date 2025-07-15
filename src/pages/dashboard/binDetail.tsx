@@ -97,8 +97,11 @@ const BinDetailsScreen: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [isEditBinOpen, setIsEditBinOpen] = useState(false);
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedModalImage, setSelectedModalImage] = useState<string | undefined | null>(null);
   
   const incrementQuantity = () => setItemCuantity((prev: any) => prev + 1);
   const decrementQuantity = () => setItemCuantity((prev: any) => Math.max(0, prev - 1));
@@ -699,13 +702,39 @@ const BinDetailsScreen: React.FC = () => {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {items.map((item) => (
                   <Card key={item.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 rounded-2xl border-0 bg-white/70 backdrop-blur-sm group">
-                    <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden">
+                    <div 
+                      className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden group cursor-pointer"
+                      onClick={() => {
+                        if (item.imageUrl) {
+                          setSelectedModalImage(item.imageUrl);
+                          setIsImageModalOpen(true);
+                        }
+                      }}
+                    >
                       {item.imageUrl ? (
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                        <>
+                          <img 
+                            src={item.imageUrl} 
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-2 right-2 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          </div>
+                          </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageIcon className="h-12 w-12 text-slate-400" />
@@ -772,6 +801,79 @@ const BinDetailsScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Image Modal */}
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden rounded-2xl border-0 shadow-2xl ml-40">
+          <div className="relative w-full h-full overflow-hidden">
+            <div
+              className="relative w-full h-full cursor-move"
+              onMouseDown={(e) => {
+                const container = e.currentTarget;
+                const img = container.querySelector('img');
+                if (!img || zoomLevel <= 1) return;
+
+                const startX = e.clientX - container.offsetLeft;
+                const startY = e.clientY - container.offsetTop;
+                const startScrollLeft = container.scrollLeft;
+                const startScrollTop = container.scrollTop;
+
+                const handleMouseMove = (e: MouseEvent) => {
+                  const x = e.clientX - container.offsetLeft;
+                  const y = e.clientY - container.offsetTop;
+                  const walkX = (x - startX) * -1;
+                  const walkY = (y - startY) * -1;
+                  container.scrollLeft = startScrollLeft + walkX;
+                  container.scrollTop = startScrollTop + walkY;
+                };
+
+                const handleMouseUp = () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+              }}
+              style={{ overflow: zoomLevel > 1 ? 'auto' : 'hidden' }}
+            >
+              <img
+                src={selectedModalImage || ''}
+                alt="Full size image"
+                style={{ transform: `scale(${zoomLevel})`, transformOrigin: '0 0' }}
+                className="w-full h-full object-contain transition-transform duration-300"
+                draggable="false"
+              />
+            </div>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                className="rounded-full p-2 bg-black/20 hover:bg-black/40 text-white"
+                onClick={() => setZoomLevel(Math.max(1, zoomLevel - 0.5))}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                className="rounded-full p-2 bg-black/20 hover:bg-black/40 text-white"
+                onClick={() => setZoomLevel(Math.min(3, zoomLevel + 0.5))}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              className="absolute top-2 right-2 rounded-full p-2 bg-black/20 hover:bg-black/40 text-white"
+              onClick={() => {
+                setIsImageModalOpen(false);
+                setZoomLevel(1);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Item Modal */}
       <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
