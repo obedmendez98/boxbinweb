@@ -108,6 +108,13 @@
     "noAccountsSharedByYou": "You haven't shared accounts with anyone",
     "inputPlaceholder": "Enter username or email",
     "cancel": "Cancel",
-    "share": "Share"
+    "share": "Share",
+    "subtitle": "Manage shared access to your resources",
+    "active": "Active",
+    "subtitle2": "Accounts shared with you will appear here",
+    "shared": "Shared",
+    "shared2": "Share your inventory with other users",
+    "user": "User or Email",
+    "pro": "Processing..."
   }
 }

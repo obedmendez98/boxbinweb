@@ -189,7 +189,9 @@ export default function SocialScreen() {
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                   {t('shareAccess.title')}
                 </h1>
-                <p className="text-gray-600 mt-1">Gestiona el acceso compartido a tus recursos</p>
+                <p className="text-gray-600 mt-1">
+                  {t('shareAccess.subtitle')}
+                </p>
               </div>
             </div>
             <Button
@@ -246,7 +248,7 @@ export default function SocialScreen() {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                         <Shield className="w-3 h-3 mr-1" />
-                        Activo
+                        {t('shareAccess.active')}
                       </Badge>
                       <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     </div>
@@ -259,7 +261,7 @@ export default function SocialScreen() {
                   <UserCheck className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 text-lg">{t('shareAccess.noAccountsSharedWithYou')}</p>
-                <p className="text-gray-400 text-sm mt-2">Las cuentas compartidas contigo aparecerán aquí</p>
+                <p className="text-gray-400 text-sm mt-2">{t('shareAccess.subtitle2')}</p>
               </div>
             )}
           </CardContent>
@@ -305,7 +307,7 @@ export default function SocialScreen() {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                         <Shield className="w-3 h-3 mr-1" />
-                        Compartido
+                        {t('shareAccess.shared')}
                       </Badge>
                       <Button
                         variant="ghost"
@@ -325,7 +327,7 @@ export default function SocialScreen() {
                   <Users className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 text-lg">{t('shareAccess.noAccountsSharedByYou')}</p>
-                <p className="text-gray-400 text-sm mt-2">Comparte tu inventario con otros usuarios</p>
+                <p className="text-gray-400 text-sm mt-2">{t('shareAccess.shared2')}</p>
               </div>
             )}
           </CardContent>
@@ -361,7 +363,7 @@ export default function SocialScreen() {
             <div className="p-6 space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
-                  Usuario o Email
+                  {t('shareAccess.user')}
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -394,7 +396,7 @@ export default function SocialScreen() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Procesando...
+                      {t('shareAccess.pro')}
                     </>
                   ) : (
                     <>

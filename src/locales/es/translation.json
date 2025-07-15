@@ -108,6 +108,13 @@
     "noAccountsSharedByYou": "No has compartido cuentas con nadie",
     "inputPlaceholder": "Ingresa el nombre de usuario o email",
     "cancel": "Cancelar",
-    "share": "Compartir"
+    "share": "Compartir",
+    "subtitle": "Gestiona el acceso compartido a tus recursos",
+    "active": "Activo",
+    "subtitle2": "Las cuentas compartidas contigo aparecerán aquí",
+    "shared": "Compartido",
+    "shared2": "Comparte tu inventario con otros usuarios",
+    "user": "Usuario o Email",
+    "pro": "Procesando..."
   }
 }
