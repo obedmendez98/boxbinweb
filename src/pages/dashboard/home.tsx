@@ -84,7 +84,7 @@ export default function HomeScreen() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Bins state
-  const [bins, setBins] = useState<Bin[]>([]);
+  //const [bins, setBins] = useState<Bin[]>([]);
   const [filteredBins, setFilteredBins] = useState<Bin[]>([]);
   const [searchTextBins, setSearchTextBins] = useState('');
   const [binsPagination, setBinsPagination] = useState<PaginationState>({
@@ -97,7 +97,7 @@ export default function HomeScreen() {
   });
 
   // Locations state
-  const [locations, setLocations] = useState<Location[]>([]);
+  //const [locations, setLocations] = useState<Location[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
   const [searchTextLocations, setSearchTextLocations] = useState('');
   const [locationsPagination, setLocationsPagination] = useState<PaginationState>({
@@ -133,12 +133,11 @@ export default function HomeScreen() {
     page: number = 1,
     searchTerm: string = '',
     isNextPage: boolean = false,
-    isPreviousPage: boolean = false
+    filterLocation: Location | null = null
   ) => {
     if (!effectiveUserId) return;
     setLoading(true);
-
-    console.log(isPreviousPage);
+  
     try {
       let binsQuery = query(
         collection(db, 'bins'),
@@ -146,37 +145,48 @@ export default function HomeScreen() {
         orderBy('createdAt', 'desc'),
         limit(ITEMS_PER_PAGE)
       );
-
+  
       if (isNextPage && binsPagination.lastVisible) {
-        binsQuery = query(
-          binsQuery,
-          startAfter(binsPagination.lastVisible)
-        );
+        binsQuery = query(binsQuery, startAfter(binsPagination.lastVisible));
       }
-
+  
       const snapshot = await getDocs(binsQuery);
-      const binsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bin));
-
-      // Attach QR codes
+      const binsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Bin));
+  
       const binsWithQRCodes = await Promise.all(
         binsData.map(async bin => {
           if (!bin.qrGuid) return bin;
           const qrSnap = await getDocs(
             query(collection(db, 'qrcodes'), where('guid', '==', bin.qrGuid))
           );
-          return qrSnap.empty ? bin : { ...bin, qrcodeId: qrSnap.docs[0].data().qrcodeId };
+          return qrSnap.empty
+            ? bin
+            : { ...bin, qrcodeId: qrSnap.docs[0].data().qrcodeId };
         })
       );
-
-      setBins(binsWithQRCodes);
-      const filtered = searchTerm
-        ? binsWithQRCodes.filter(bin => 
-            [bin.name, bin.description, bin.qrcodeId]
-              .some(field => normalizeText(field).includes(normalizeText(searchTerm)))
-          )
-        : binsWithQRCodes;
+  
+      //setBins(binsWithQRCodes);
+  
+      const normalizedSearch = normalizeText(searchTerm);
+  
+      const filtered = binsWithQRCodes.filter(bin => {
+        const matchesSearch = searchTerm
+          ? [bin.name, bin.description, bin.qrcodeId]
+              .some(field => normalizeText(field).includes(normalizedSearch))
+          : true;
+  
+        const matchesLocation = filterLocation
+          ? bin.location?.id === filterLocation.id
+          : true;
+  
+        return matchesSearch && matchesLocation;
+      });
+  
       setFilteredBins(filtered);
-
+  
       setBinsPagination({
         currentPage: page,
         hasNextPage: snapshot.docs.length === ITEMS_PER_PAGE,
@@ -190,7 +200,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   const fetchLocations = async (
     page: number = 1,
@@ -215,7 +225,7 @@ export default function HomeScreen() {
       const snapshot = await getDocs(locQuery);
       const locData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
 
-      setLocations(locData);
+      //setLocations(locData);
       const filtered = searchTerm
         ? locData.filter(loc => normalizeText(loc.name).includes(normalizeText(searchTerm)))
         : locData;
@@ -260,22 +270,24 @@ export default function HomeScreen() {
   // --- EFFECTS ---
   // Initial and impersonation reload
   useEffect(() => {
-    if (activeTab === 'bins') fetchBins();
-    else fetchLocations();
+    if (activeTab === 'bins') {
+      fetchBins(1, searchTextBins, false, filterLocation); // importante
+    } else {
+      fetchLocations();
+    }
     fetchStats();
-
-    console.log('activeTab', userImpersonated);
-    console.log(locations)
-  
-  }, [activeTab, effectiveUserId]);
+  }, [activeTab, effectiveUserId, filterLocation]);  
 
   // Search effects
   useEffect(() => {
     if (activeTab === 'bins') {
-      const timer = setTimeout(() => fetchBins(1, searchTextBins), 300);
+      const timer = setTimeout(() => {
+        fetchBins(1, searchTextBins, false, filterLocation);
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [searchTextBins, activeTab, effectiveUserId]);
+  }, [searchTextBins, activeTab, effectiveUserId, filterLocation]);
+  
 
   useEffect(() => {
     if (activeTab === 'locations') {
@@ -286,9 +298,10 @@ export default function HomeScreen() {
 
   const handleLocationFilter = (location: Location) => {
     setActiveTab('bins');
-    setFilterLocation(location);
-    setFilteredBins(bins.filter(bin => bin.location?.id === location.id));
+    setFilterLocation(location); // guarda la location seleccionada
+    fetchBins(1, searchTextBins, false, location); // aplica el filtro
   };
+  
 
   const clearLocationFilter = () => {
     setFilterLocation(null);
@@ -391,8 +404,6 @@ export default function HomeScreen() {
   );
 
   const renderListView = (items: any, type: any) => {
-    console.log(items);
-    console.log(type);
     return(
       <div className="space-y-3">
         {items.map((item: any) => (
