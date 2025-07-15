@@ -88,7 +88,7 @@ export default function HomeScreen() {
   });
 
   // Locations state
-  const [locations, setLocations] = useState<Location[]>([]);
+  //const [locations, setLocations] = useState<Location[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
   const [searchTextLocations, setSearchTextLocations] = useState('');
   const [locationsPagination, setLocationsPagination] = useState<PaginationState>({
@@ -118,8 +118,14 @@ export default function HomeScreen() {
   // Fetch bins with pagination
   const fetchBins = async (page: number = 1, searchTerm: string = '', isNextPage: boolean = false, isPreviousPage: boolean = false) => {
     if (!currentUser?.uid) return;
-    console.log(locations);
     setLoading(true);
+
+    const res_impersonate = localStorage.getItem('impersonatedUser');
+    if (res_impersonate) {
+      const user = JSON.parse(res_impersonate);
+      console.log(user)
+    }
+
     
     try {
       let binsQuery = query(
@@ -233,7 +239,7 @@ export default function HomeScreen() {
         ...doc.data(),
       })) as Location[];
 
-      setLocations(locationsData);
+      //setLocations(locationsData);
       
       // Filter by search term if provided
       const filtered = searchTerm 
@@ -516,7 +522,7 @@ export default function HomeScreen() {
     );
   }
 
-   return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 relative">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Header con estadísticas */}
