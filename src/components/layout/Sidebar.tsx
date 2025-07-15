@@ -56,6 +56,7 @@ export function Sidebar({ className }: SidebarProps) {
   const handleLogout = async () => {
     try {
       await logoutUser();
+      localStorage.removeItem('impersonatedUser');
       navigate('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
