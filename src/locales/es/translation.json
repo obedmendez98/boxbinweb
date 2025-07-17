@@ -1,4 +1,11 @@
 {
+  "subscription": {
+    "premium": "Plan Premium",
+    "upgrade": "Mejorar a Premium",
+    "active": "Activo",
+    "choosePlan": "Elige tu Plan",
+    "choosePlanDescription": "Selecciona un plan de suscripción para desbloquear todas las funciones"
+  },
   "auth": {
     "signInTitle": "Inicia sesión en tu cuenta",
     "signInSubtitle": "Elige tu método de inicio de sesión preferido",

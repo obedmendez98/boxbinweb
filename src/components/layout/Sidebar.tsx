@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -15,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   PersonStandingIcon,
+  Crown,
 } from "lucide-react";
 import { useState } from "react";
 import { logoutUser } from "@/lib/firebase";
@@ -30,6 +32,7 @@ export function Sidebar({ className }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
+  const { isSubscribed, setShowSubscriptionModal } = useSubscription();
   const [collapsed, setCollapsed] = useState(false);
 
   const sidebarItems = [
@@ -107,6 +110,39 @@ export function Sidebar({ className }: SidebarProps) {
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-6">
+        {/* Subscription Status */}
+        {!collapsed && (
+          <div className="mb-6 px-1">
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-between h-11 rounded-xl transition-all duration-200",
+                isSubscribed
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                  : "bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+              )}
+              onClick={() => setShowSubscriptionModal(true)}
+            >
+              <div className="flex items-center">
+                <Crown className={cn(
+                  "h-5 w-5 mr-3",
+                  isSubscribed ? "text-amber-500" : "text-slate-400"
+                )} />
+                <span className="font-medium">
+                  {isSubscribed ? t('subscription.premium') : t('subscription.upgrade')}
+                </span>
+              </div>
+              {isSubscribed && (
+                <Badge
+                  variant="secondary"
+                  className="ml-2 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                >
+                  {t('subscription.active')}
+                </Badge>
+              )}
+            </Button>
+          </div>
+        )}
         <nav className="space-y-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon;

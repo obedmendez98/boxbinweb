@@ -78,6 +78,8 @@ export default function HomeScreen() {
   );
   const effectiveUserId = userImpersonated?.ownerUserId || currentUser?.uid;
 
+  const [loader, setLoader] = useState(false);
+
   // UI state
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'bins' | 'locations' | any>('bins');
@@ -137,8 +139,9 @@ export default function HomeScreen() {
   ) => {
     if (!effectiveUserId) return;
     setLoading(true);
-  
+    
     try {
+      setLoader(false);
       let binsQuery = query(
         collection(db, 'bins'),
         where('userId', '==', effectiveUserId),
@@ -195,6 +198,8 @@ export default function HomeScreen() {
         firstVisible: snapshot.docs[0] || null,
         totalCount: filtered.length
       });
+
+      setLoader(false);
     } catch (error) {
       console.error('Error fetching bins:', error);
     } finally {
@@ -653,7 +658,19 @@ export default function HomeScreen() {
               <>
                 {viewMode === 'grid' ? (
                   <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {filteredBins.map(renderBinCard)}
+
+                    {
+                      loader ? (
+                        <div className="flex items-center justify-center">
+                         <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-200 border-t-emerald-600"></div>
+               <p className="text-slate-600">{t('dashboard.loading')}</p>
+            </div>
+                        </div>
+                      ) : (
+                        filteredBins.map(renderBinCard)
+                      )
+                    }
                   </div>
                 ) : (
                   renderListView(filteredBins, 'bin')
