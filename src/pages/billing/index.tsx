@@ -1,23 +1,34 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useAuth } from '@/context/AuthContext';
+import { auth } from '@/lib/firebase';
+
 import { useCallback, useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import CheckoutForm from './CheckoutForm';
-import { Navigate } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
 import { getStripePlans } from '../../lib/stripe';
 
 const stripePromise = loadStripe('pk_live_51R1ZluFYljVxujDOMhxk6gz6rE7DMHV1getzaaXtK72hZxCMGeYnvxSbxaMuKyjZzDuSqVA9dL7r5lmx2Cc2rLin00OcKfa5wk');
-
 export default function BillingPage() {
-  const { currentUser } = useAuth();
-  const [subscription, setSubscription] = useState<Record<string, unknown> | null>(null);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+    const { currentUser } = useAuth();
+    const [subscription, setSubscription] = useState<Record<string, unknown> | null>(null);
+    const [plans, setPlans] = useState<any[]>([]);
+    const [selectedPlan, setSelectedPlan] = useState<string>('');
+    const [loading, setLoading] = useState(true);
+    
+    const handleLogout = async () => {
+        try {
+            await auth.signOut();
+            window.location.href = '/login';
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
 
   useEffect(() => {
     const checkSubscription = async () => {
@@ -61,8 +72,20 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
+    <div className="flex flex-col min-h-screen">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Billing</h1>
+          <button 
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
+      <div className="flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex-1">
+          <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">Choose a Plan</CardTitle>
           <CardDescription className="text-center">Select a subscription plan to continue</CardDescription>
@@ -89,6 +112,7 @@ export default function BillingPage() {
           )}
         </CardContent>
       </Card>
+        </div>
     </div>
   );
 }
