@@ -6,8 +6,9 @@ import BillingPage from '@/pages/billing';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { SmartLabelsPage } from '@/pages/smart-labels';
 import BinDetailsPage from '@/pages/dashboard/binDetail';
 import { LocationsManager } from '@/pages/dashboard/Locations';
 import SocialScreen from '@/pages/dashboard/SocialScreen';
@@ -74,6 +75,10 @@ const router = createBrowserRouter([
     {
         path: '/',
         element: <Navigate to="/home" replace />,
+    },
+    {
+        path: '/smart-labels',
+        element: <ProtectedRoute><SmartLabelsPage /></ProtectedRoute>,
     },
     {
         path: '/billing',
