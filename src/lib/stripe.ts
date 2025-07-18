@@ -1,9 +1,9 @@
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, type StripeConstructor } from '@stripe/stripe-js';
 import Stripe from 'stripe';
 
 declare global {
   interface Window {
-    Stripe?: typeof Stripe;
+    Stripe?: StripeConstructor;
   }
 }
 
@@ -34,7 +34,7 @@ interface Plan {
 
 import { STRIPE_PUBLISHABLE_KEY } from '../config/stripe';
 
-const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+export const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 import { STRIPE_SECRET_KEY } from '../config/stripe';
 
 const stripeClient = new Stripe(STRIPE_SECRET_KEY, {

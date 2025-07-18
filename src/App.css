@@ -1,4 +1,4 @@
-/* App.css - Limpio para dashboard */
+/* App.css - Arreglado para permitir scroll */
 
 /* Reset básico para el root */
 #root {
@@ -6,7 +6,7 @@
   width: 100vw;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Evita scroll en el root */
+  /* ELIMINADO: overflow: hidden; - Esto bloqueaba el scroll */
 }
 
 /* Estilos globales para tu dashboard */
