@@ -6,7 +6,7 @@ import BillingPage from '@/pages/billing';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import BinDetailsPage from '@/pages/dashboard/binDetail';
 import { LocationsManager } from '@/pages/dashboard/Locations';
@@ -21,9 +21,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const checkSubscription = async () => {
             if (currentUser) {
-                const docRef = doc(db, 'subscriptions', currentUser.uid);
-                const docSnap = await getDoc(docRef);
-                setHasSubscription(docSnap.exists());
+                const subscriptionsRef = collection(db, 'subscriptions');
+                const q = query(subscriptionsRef, where('userId', '==', currentUser.uid));
+                const querySnapshot = await getDocs(q);
+                setHasSubscription(!querySnapshot.empty);
             }
             setSubscriptionLoading(false);
         };

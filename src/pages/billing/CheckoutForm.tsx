@@ -3,13 +3,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { createStripeSubscription } from '@/lib/stripe';
 
 type CheckoutFormProps = {
   userId: string | undefined;
   planId: string;
 };
 
-export default function CheckoutForm({ userId }: CheckoutFormProps) {
+export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
@@ -36,15 +37,22 @@ export default function CheckoutForm({ userId }: CheckoutFormProps) {
         return;
       }
 
-      // In a real implementation, you would call your backend API
-      // to create the subscription with the selected plan
-      const subscription = await addDoc(collection(db, 'subscriptions'), {
-         userId,
-         planId: props.planId,
-         status: 'active',
-         createdAt: new Date(),
-         paymentMethod: paymentMethod.id,
-       });
+      // Create Stripe subscription
+      const { subscriptionId, customerId } = await createStripeSubscription(
+        paymentMethod.id,
+        planId
+      );
+
+      // Save subscription details to Firestore
+      await addDoc(collection(db, 'subscriptions'), {
+        userId,
+        planId,
+        status: 'active',
+        createdAt: new Date(),
+        paymentMethod: paymentMethod.id,
+        stripeSubscriptionId: subscriptionId,
+        stripeCustomerId: customerId
+      });
 
       // Redirect to dashboard after successful payment
       window.location.href = '/home';
