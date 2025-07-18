@@ -65,7 +65,16 @@ export const SmartLabelsPage = () => {
           <h2 className="text-lg font-semibold mb-4">Previous Requests</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {requestHistory.map((request) => (
-              <div key={request.requestId} className="bg-gray-100 p-4 rounded-lg">
+              <div key={request.requestId} className="bg-gray-100 p-4 rounded-lg relative">
+                <button 
+                   onClick={() => console.log('Print request:', request.requestId)}
+                   className="absolute top-2 right-2 p-1 text-blue-600 hover:text-blue-800"
+                   aria-label="Print request"
+                 >
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                   </svg>
+                </button>
                 <h3 className="font-medium text-lg mb-2">Request {request.requestId.slice(0, 8)}</h3>
                 <div className="grid grid-cols-2 gap-2">
                   <div>

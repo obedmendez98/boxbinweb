@@ -60,13 +60,19 @@ export const Step1 = ({ qrCount, setQrCount, onGenerate }: Step1Props) => {
   };
 
   return (
-    <motion.div
-      initial={{ y: 50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -50, opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="bg-white p-6 rounded-lg shadow-md"
-    >
+    <div className="relative">
+      {isGenerating && (
+        <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10 rounded-lg">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: -50, opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white p-6 rounded-lg shadow-md"
+      >
       <h2 className="text-xl font-semibold mb-4">How many QR codes do you need?</h2>
       <input
         type="number"
@@ -85,5 +91,6 @@ export const Step1 = ({ qrCount, setQrCount, onGenerate }: Step1Props) => {
           Generate QR Codes
         </button>
     </motion.div>
+    </div>
   );
 };
