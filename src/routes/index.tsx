@@ -12,6 +12,7 @@ import { SmartLabelsPage } from '@/pages/smart-labels';
 import BinDetailsPage from '@/pages/dashboard/binDetail';
 import { LocationsManager } from '@/pages/dashboard/Locations';
 import SocialScreen from '@/pages/dashboard/SocialScreen';
+import { TemplatesView } from '@/pages/smart-labels/components/TemplatesView';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -78,7 +79,15 @@ const router = createBrowserRouter([
     },
     {
         path: '/smart-labels',
-        element: <ProtectedRoute><SmartLabelsPage /></ProtectedRoute>,
+        element: <ProtectedRoute><SmartLabelsPage /></ProtectedRoute>
+    },
+    {
+        path: '/smart-labels/templates',
+        element: <ProtectedRoute><TemplatesView /></ProtectedRoute>
+    },
+       {
+        path: '/templates',
+        element: <ProtectedRoute><TemplatesView /></ProtectedRoute>,
     },
     {
         path: '/billing',
