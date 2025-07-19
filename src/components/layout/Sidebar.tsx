@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   PersonStandingIcon,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { logoutUser } from "@/lib/firebase";
@@ -50,6 +51,11 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/impersonate",
       icon: PersonStandingIcon,
       badge: t('sidebar.new'),
+    },
+    {
+      title: "Subscription",
+      href: "/subscription",
+      icon: Settings,
     },
   ];
 
