@@ -51,8 +51,6 @@ export const getStripePlans = async (): Promise<Plan[]> => {
       active: true,
       expand: ['data.default_price']
     }) as { data: StripeProduct[] };
-
-    console.log(products);
     
     return products.map((product: StripeProduct) => ({
       id: product.default_price?.id || '',

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Plus, 
-  MapPin, 
-  Edit, 
-  Trash2, 
-  ChevronLeft, 
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Plus,
+  MapPin,
+  Edit,
+  Trash2,
+  ChevronLeft,
   ChevronRight,
   MoreVertical,
   Building,
@@ -14,49 +14,79 @@ import {
   Loader2,
   Check,
   AlertCircle,
-  RefreshCw
-} from 'lucide-react';
+  RefreshCw,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
-import { addDoc, collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, startAfter, updateDoc, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useTranslation } from 'react-i18next';
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  startAfter,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTranslation } from "react-i18next";
+import { getStripePlanById } from "@/lib/stripe";
 
 export const LocationsManager = () => {
-   const { t } = useTranslation();
+  const { t } = useTranslation();
   // Estados principales
   const [locations, setLocations] = useState<any>([]);
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [operationLoading, setOperationLoading] = useState(false);
-  const [itemName, setItemName] = useState('');
-  const [itemAddress, setItemAddress] = useState('');
-  const [itemDescription, setItemDescription] = useState('');
-  const [showAlert, setShowAlert] = useState({ show: false, type: '', message: '' });
+  const [itemName, setItemName] = useState("");
+  const [itemAddress, setItemAddress] = useState("");
+  const [itemDescription, setItemDescription] = useState("");
+  const [showAlert, setShowAlert] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
   const [editingId, setEditingId] = useState<any>(null);
-  
+
   // Estados de paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [totalLocations, setTotalLocations] = useState(0);
   //const [lastVisible, setLastVisible] = useState<any>(null);
   //const [firstVisible, setFirstVisible] = useState<any>(null);
@@ -68,43 +98,89 @@ export const LocationsManager = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
 
+  const [subscription, setSubscription] = useState<any | null>(null);
+
+  const fetchSubscription = async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const q = query(
+        collection(db, "subscriptions"),
+        where("userId", "==", currentUser.uid)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const sub = querySnapshot.docs[0].data();
+
+        if (sub.planId) {
+          const stripePlan = await getStripePlanById(sub.planId);
+
+          console.log(stripePlan);
+          const fullSubscription = {
+            ...sub,
+            plan: stripePlan?.product?.name ?? "Unknown Plan",
+            price: (stripePlan?.unit_amount ?? 0) / 100,
+            interval: stripePlan?.recurring?.interval ?? "month",
+            metadata: stripePlan?.metadata ?? {},
+          };
+
+          console.log(fullSubscription);
+
+          setSubscription(fullSubscription);
+        } else {
+          setSubscription(sub);
+        }
+      } else {
+        console.log("❌ No se encontró suscripción para el usuario.");
+      }
+    } catch (error) {
+      console.error("🔥 Error al obtener suscripción:", error);
+    }
+  };
+
   // Función para mostrar alertas
   const showAlertMessage = (type: any, message: any) => {
     setShowAlert({ show: true, type, message });
-    setTimeout(() => setShowAlert({ show: false, type: '', message: '' }), 4000);
+    setTimeout(
+      () => setShowAlert({ show: false, type: "", message: "" }),
+      4000
+    );
   };
 
   // Función para obtener el total de ubicaciones
   const getTotalLocations = async () => {
     if (!currentUser) return;
-    
+
     try {
+      await fetchSubscription();
+
       const q = query(
-        collection(db, 'locations'),
-        where('userId', '==', currentUser.uid)
+        collection(db, "locations"),
+        where("userId", "==", currentUser.uid)
       );
       const snapshot = await getDocs(q);
       setTotalLocations(snapshot.size);
     } catch (error) {
-      console.error('Error getting total locations:', error);
+      console.error("Error getting total locations:", error);
     }
   };
 
   // Función para cargar ubicaciones con paginación
   const loadLocations = async (page = 1, isRefresh = false) => {
     if (!currentUser) return;
-    
+
     setPageLoading(true);
-    
+
     try {
-      const locationsRef = collection(db, 'locations');
+      const locationsRef = collection(db, "locations");
       let q;
-      
+
       // Construir query base
       const baseQuery = [
-        where('userId', '==', currentUser.uid),
-        orderBy(sortBy, sortOrder === 'asc' ? 'asc' : 'desc'),
-        limit(itemsPerPage + 1) // +1 para determinar si hay siguiente página
+        where("userId", "==", currentUser.uid),
+        orderBy(sortBy, sortOrder === "asc" ? "asc" : "desc"),
+        limit(itemsPerPage + 1), // +1 para determinar si hay siguiente página
       ];
 
       if (page === 1 || isRefresh) {
@@ -125,34 +201,34 @@ export const LocationsManager = () => {
 
       const snapshot = await getDocs(q);
       const docs = snapshot.docs;
-      
+
       // Separar los documentos de la página actual y verificar si hay más
       const pageData = docs.slice(0, itemsPerPage);
       const hasMore = docs.length > itemsPerPage;
-      
-      const locationsData = pageData.map(doc => ({
+
+      const locationsData = pageData.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt)
+        createdAt:
+          doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt),
       }));
 
       setLocations(locationsData);
       setHasNextPage(hasMore);
       setHasPrevPage(page > 1);
-      
+
       // Guardar snapshots para navegación
       if (pageData.length > 0) {
         const newPageSnapshots = new Map(pageSnapshots);
         newPageSnapshots.set(page, pageData[pageData.length - 1]);
         setPageSnapshots(newPageSnapshots);
-        
+
         //setLastVisible(pageData[pageData.length - 1]);
         //setFirstVisible(pageData[0]);
       }
-      
     } catch (error) {
-      console.error('Error loading locations:', error);
-      showAlertMessage('error', 'Error loading the locations');
+      console.error("Error loading locations:", error);
+      showAlertMessage("error", "Error loading the locations");
     } finally {
       setPageLoading(false);
     }
@@ -161,19 +237,28 @@ export const LocationsManager = () => {
   // Función para filtrar ubicaciones localmente
   const getFilteredLocations = () => {
     if (!searchText.trim()) return locations;
-    
+
     const searchTerm = searchText.toLowerCase();
-    return locations.filter((location: any) =>
-      location.name.toLowerCase().includes(searchTerm) ||
-      location.address?.toLowerCase().includes(searchTerm) ||
-      location.description?.toLowerCase().includes(searchTerm)
+    return locations.filter(
+      (location: any) =>
+        location.name.toLowerCase().includes(searchTerm) ||
+        location.address?.toLowerCase().includes(searchTerm) ||
+        location.description?.toLowerCase().includes(searchTerm)
     );
   };
 
   // Función para crear ubicación
   const handleSubmit = async () => {
     if (!itemName.trim() || !currentUser) return;
-    
+    // Verificar si ya alcanzó el límite
+    if (totalLocations >= Number(subscription?.metadata?.locations)) {
+      showAlertMessage(
+        "error",
+        `You have reached the limit of ${subscription?.metadata?.locations} locations for your plan.`
+      );
+      return;
+    }
+
     setOperationLoading(true);
     try {
       const data = {
@@ -183,25 +268,23 @@ export const LocationsManager = () => {
         createdAt: serverTimestamp(),
         userId: currentUser.uid,
       };
-      
-      await addDoc(collection(db, 'locations'), data);
-      
+
+      await addDoc(collection(db, "locations"), data);
+
       // Resetear formulario
-      setItemName('');
-      setItemAddress('');
-      setItemDescription('');
+      setItemName("");
+      setItemAddress("");
+      setItemDescription("");
       setIsModalVisible(false);
-      
-      showAlertMessage('success', 'Location created successfully');
-      
+
+      showAlertMessage("success", "Location created successfully");
+
       // Recargar datos
       await loadLocations(1, true);
       await getTotalLocations();
-      
     } catch (error) {
-      console.error('Error creating location:', error);
-      showAlertMessage('error', 'Error creating the location');
-
+      console.error("Error creating location:", error);
+      showAlertMessage("error", "Error creating the location");
     } finally {
       setOperationLoading(false);
     }
@@ -210,38 +293,37 @@ export const LocationsManager = () => {
   // Función para actualizar ubicación
   const handleUpdateSubmit = async () => {
     if (!itemName.trim() || !editingId || !currentUser) {
-      console.log(itemName)
-      console.log(editingId)
+      console.log(itemName);
+      console.log(editingId);
       console.log(currentUser);
       return;
     }
-    
+
     setOperationLoading(true);
     try {
-      const locationRef = doc(db, 'locations', editingId);
+      const locationRef = doc(db, "locations", editingId);
       await updateDoc(locationRef, {
         name: itemName.trim(),
         address: itemAddress.trim(),
         description: itemDescription.trim(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
-      
+
       // Resetear formulario
-      setItemName('');
-      setItemAddress('');
-      setItemDescription('');
+      setItemName("");
+      setItemAddress("");
+      setItemDescription("");
       setIsEditModalVisible(false);
       setEditingId(null);
       setSelectedLocation(null);
-      
-     showAlertMessage('success', 'Location updated successfully');
-      
+
+      showAlertMessage("success", "Location updated successfully");
+
       // Recargar datos
       await loadLocations(currentPage);
-      
     } catch (error) {
-      console.error('Error updating location:', error);
-      showAlertMessage('error', 'Error updating the location');
+      console.error("Error updating location:", error);
+      showAlertMessage("error", "Error updating the location");
     } finally {
       setOperationLoading(false);
     }
@@ -249,23 +331,22 @@ export const LocationsManager = () => {
 
   // Función para eliminar ubicación
   const confirmDeleteLocation = async (locationId: string) => {
-    if (!window.confirm(t('locations.confirmDelete'))) {
+    if (!window.confirm(t("locations.confirmDelete"))) {
       return;
     }
-    
+
     setOperationLoading(true);
     try {
-      await deleteDoc(doc(db, 'locations', locationId));
-      
+      await deleteDoc(doc(db, "locations", locationId));
+
       setSelectedLocation(null);
-      showAlertMessage('success', 'Location deleted successfully');      
+      showAlertMessage("success", "Location deleted successfully");
       // Recargar datos
       await loadLocations(currentPage);
       await getTotalLocations();
-      
     } catch (error) {
-      console.error('Error deleting location:', error);
-      showAlertMessage('error', 'Error deleting the location');
+      console.error("Error deleting location:", error);
+      showAlertMessage("error", "Error deleting the location");
     } finally {
       setOperationLoading(false);
     }
@@ -282,28 +363,28 @@ export const LocationsManager = () => {
     if (location) {
       setEditingId(locationId);
       setItemName(location.name);
-      setItemAddress(location.address || '');
-      setItemDescription(location.description || '');
+      setItemAddress(location.address || "");
+      setItemDescription(location.description || "");
       setIsEditModalVisible(true);
     }
   };
 
   // Función para resetear formulario
   const resetForm = () => {
-    setItemName('');
-    setItemAddress('');
-    setItemDescription('');
+    setItemName("");
+    setItemAddress("");
+    setItemDescription("");
     setEditingId(null);
   };
 
   // Función para formatear fecha
   const formatDate = (date: any) => {
-    if (!date) return '';
+    if (!date) return "";
     const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return dateObj.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -334,10 +415,10 @@ export const LocationsManager = () => {
     if (currentUser) {
       // Listener en tiempo real para cambios en la colección
       const q = query(
-        collection(db, 'locations'),
-        where('userId', '==', currentUser.uid)
+        collection(db, "locations"),
+        where("userId", "==", currentUser.uid)
       );
-      
+
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setTotalLocations(snapshot.size);
       });
@@ -346,14 +427,13 @@ export const LocationsManager = () => {
     }
   }, [currentUser]);
 
-
   if (!currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Alert className="max-w-md">
           <AlertCircle className="h-4 w-4" />
-            {t('locations.mustSignIn')}        
-          </Alert>
+          {t("locations.mustSignIn")}
+        </Alert>
       </div>
     );
   }
@@ -367,19 +447,25 @@ export const LocationsManager = () => {
       {showAlert.show && (
         <Alert
           className={`fixed top-4 right-4 z-50 max-w-md shadow-lg border-l-4 ${
-            showAlert.type === 'error'
-              ? 'border-l-red-500 bg-red-50 border-red-200'
-              : 'border-l-green-500 bg-green-50 border-green-200'
+            showAlert.type === "error"
+              ? "border-l-red-500 bg-red-50 border-red-200"
+              : "border-l-green-500 bg-green-50 border-green-200"
           } animate-in slide-in-from-right-full duration-300`}
         >
           <div className="flex items-center">
-            {showAlert.type === 'error' ? (
+            {showAlert.type === "error" ? (
               <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
             ) : (
               <Check className="h-4 w-4 text-green-600 mr-2" />
             )}
-            <AlertDescription className={showAlert.type === 'error' ? 'text-red-800' : 'text-green-800'}>
-              {t(`locations.alert.${showAlert.type}`, { message: showAlert.message })}
+            <AlertDescription
+              className={
+                showAlert.type === "error" ? "text-red-800" : "text-green-800"
+              }
+            >
+              {t(`locations.alert.${showAlert.type}`, {
+                message: showAlert.message,
+              })}
             </AlertDescription>
           </div>
         </Alert>
@@ -393,23 +479,40 @@ export const LocationsManager = () => {
               <Building className="h-8 w-8 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('locations.title')}</h1>
-              <p className="text-gray-600 mt-1">{t('locations.subtitle')}</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {t("locations.title")}
+              </h1>
+              <p className="text-gray-600 mt-1">{t("locations.subtitle")}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={pageLoading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${pageLoading ? 'animate-spin' : ''}`} />
-              {t('locations.refresh')}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={pageLoading}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${pageLoading ? "animate-spin" : ""}`}
+              />
+              {t("locations.refresh")}
             </Button>
             <Badge variant="outline" className="px-3 py-1">
-              {totalLocations} {t('locations.count')}
+              {totalLocations} {t("locations.count")}
             </Badge>
-            <Button onClick={() => { resetForm(); setIsModalVisible(true); }} className="bg-blue-600 hover:bg-blue-700 shadow-lg">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('locations.new')}
-            </Button>
+            {totalLocations <= Number(subscription?.metadata?.locations) && (
+              <Button
+                onClick={() => {
+                  resetForm();
+                  setIsModalVisible(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 shadow-lg"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t("locations.new")}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -420,7 +523,7 @@ export const LocationsManager = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder={t('locations.searchPlaceholder')}
+                  placeholder={t("locations.searchPlaceholder")}
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   className="pl-10 pr-10 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
@@ -430,7 +533,7 @@ export const LocationsManager = () => {
                     variant="ghost"
                     size="sm"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-7 w-7"
-                    onClick={() => setSearchText('')}
+                    onClick={() => setSearchText("")}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -442,8 +545,12 @@ export const LocationsManager = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="name">{t('locations.sort.name')}</SelectItem>
-                    <SelectItem value="createdAt">{t('locations.sort.date')}</SelectItem>
+                    <SelectItem value="name">
+                      {t("locations.sort.name")}
+                    </SelectItem>
+                    <SelectItem value="createdAt">
+                      {t("locations.sort.date")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -452,12 +559,19 @@ export const LocationsManager = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="asc">{t('locations.sort.asc')}</SelectItem>
-                    <SelectItem value="desc">{t('locations.sort.desc')}</SelectItem>
+                    <SelectItem value="asc">
+                      {t("locations.sort.asc")}
+                    </SelectItem>
+                    <SelectItem value="desc">
+                      {t("locations.sort.desc")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Select value={itemsPerPage.toString()} onValueChange={(v) => setItemsPerPage(parseInt(v))}>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(v) => setItemsPerPage(parseInt(v))}
+                >
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
@@ -486,15 +600,25 @@ export const LocationsManager = () => {
               <Building className="w-16 h-16 text-blue-600" />
             </div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              {searchText.trim() ? t('locations.emptySearch') : t('locations.empty')}
+              {searchText.trim()
+                ? t("locations.emptySearch")
+                : t("locations.empty")}
             </h2>
             <p className="text-gray-600 mb-6 text-center max-w-md">
-              {searchText.trim() ? t('locations.hintSearch') : t('locations.hintEmpty')}
+              {searchText.trim()
+                ? t("locations.hintSearch")
+                : t("locations.hintEmpty")}
             </p>
             {!searchText.trim() && (
-              <Button onClick={() => { resetForm(); setIsModalVisible(true); }} className="bg-blue-600 hover:bg-blue-700">
+              <Button
+                onClick={() => {
+                  resetForm();
+                  setIsModalVisible(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 <Plus className="h-4 w-4 mr-2" />
-                {t('locations.createFirst')}
+                {t("locations.createFirst")}
               </Button>
             )}
           </div>
@@ -507,8 +631,8 @@ export const LocationsManager = () => {
                   key={location.id}
                   className={`group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 shadow-sm bg-white/80 backdrop-blur-sm ${
                     selectedLocation?.id === location.id
-                      ? 'ring-2 ring-blue-500 shadow-blue-100'
-                      : 'hover:shadow-gray-200'
+                      ? "ring-2 ring-blue-500 shadow-blue-100"
+                      : "hover:shadow-gray-200"
                   }`}
                   onClick={() => handleLocationSelect(location)}
                 >
@@ -524,7 +648,9 @@ export const LocationsManager = () => {
                           </CardTitle>
                           <div className="flex items-center gap-2 mt-1">
                             <Calendar className="h-3 w-3 text-gray-400" />
-                            <span className="text-xs text-gray-500">{formatDate(location.createdAt)}</span>
+                            <span className="text-xs text-gray-500">
+                              {formatDate(location.createdAt)}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -541,16 +667,24 @@ export const LocationsManager = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditLocation(location.id); }}>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditLocation(location.id);
+                            }}
+                          >
                             <Edit className="h-4 w-4 mr-2" />
-                            {t('actions.edit')}
+                            {t("actions.edit")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={(e) => { e.stopPropagation(); confirmDeleteLocation(location.id); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDeleteLocation(location.id);
+                            }}
                             className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            {t('actions.delete')}
+                            {t("actions.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -559,19 +693,25 @@ export const LocationsManager = () => {
 
                   <CardContent className="pt-0">
                     {location.address && (
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{location.address}</p>
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                        {location.address}
+                      </p>
                     )}
                     {location.description && (
-                      <p className="text-sm text-gray-700 mb-3 line-clamp-2">{location.description}</p>
+                      <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                        {location.description}
+                      </p>
                     )}
                     <div className="flex items-center justify-between">
                       <Badge variant="secondary" className="px-2 py-1 text-xs">
-                        {t('locations.badge')}
+                        {t("locations.badge")}
                       </Badge>
                       {selectedLocation?.id === location.id && (
                         <div className="flex items-center gap-1">
                           <Check className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm text-blue-600 font-medium">{t('locations.selected')}</span>
+                          <span className="text-sm text-blue-600 font-medium">
+                            {t("locations.selected")}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -584,20 +724,32 @@ export const LocationsManager = () => {
             {!searchText && totalPages > 1 && (
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  {t('locations.pagination.pageInfo', {
+                  {t("locations.pagination.pageInfo", {
                     current: currentPage,
                     total: totalPages,
-                    count: totalLocations
+                    count: totalLocations,
                   })}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={!hasPrevPage || pageLoading}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={!hasPrevPage || pageLoading}
+                  >
                     <ChevronLeft className="h-4 w-4" />
-                    {t('pagination.previous')}
+                    {t("pagination.previous")}
                   </Button>
-                  <span className="text-sm text-gray-600 px-3">{currentPage} / {totalPages}</span>
-                  <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={!hasNextPage || pageLoading}>
-                    {t('pagination.next')}
+                  <span className="text-sm text-gray-600 px-3">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={!hasNextPage || pageLoading}
+                  >
+                    {t("pagination.next")}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -611,39 +763,77 @@ export const LocationsManager = () => {
       <Dialog open={isModalVisible} onOpenChange={setIsModalVisible}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">{t('locations.modal.newTitle')}</DialogTitle>
+            <DialogTitle className="text-xl font-semibold">
+              {t("locations.modal.newTitle")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">{t('form.name')} *</Label>
-              <Input id="name" value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder={t('form.namePlaceholder')} className="h-11" />
+              <Label htmlFor="name" className="text-sm font-medium">
+                {t("form.name")} *
+              </Label>
+              <Input
+                id="name"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                placeholder={t("form.namePlaceholder")}
+                className="h-11"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="address" className="text-sm font-medium">
-                {t('form.address')} <span className="text-gray-500 font-normal">({t('form.optional')})</span>
+                {t("form.address")}{" "}
+                <span className="text-gray-500 font-normal">
+                  ({t("form.optional")})
+                </span>
               </Label>
-              <Input id="address" value={itemAddress} onChange={(e) => setItemAddress(e.target.value)} placeholder={t('form.addressPlaceholder')} className="h-11" />
+              <Input
+                id="address"
+                value={itemAddress}
+                onChange={(e) => setItemAddress(e.target.value)}
+                placeholder={t("form.addressPlaceholder")}
+                className="h-11"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="description" className="text-sm font-medium">
-                {t('form.description')} <span className="text-gray-500 font-normal">({t('form.optional')})</span>
+                {t("form.description")}{" "}
+                <span className="text-gray-500 font-normal">
+                  ({t("form.optional")})
+                </span>
               </Label>
-              <Textarea id="description" value={itemDescription} onChange={(e) => setItemDescription(e.target.value)} placeholder={t('form.descriptionPlaceholder')} rows={4} className="resize-none" />
+              <Textarea
+                id="description"
+                value={itemDescription}
+                onChange={(e) => setItemDescription(e.target.value)}
+                placeholder={t("form.descriptionPlaceholder")}
+                rows={4}
+                className="resize-none"
+              />
             </div>
             <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsModalVisible(false)} className="flex-1" disabled={operationLoading}>
-                {t('actions.cancel')}
+              <Button
+                variant="outline"
+                onClick={() => setIsModalVisible(false)}
+                className="flex-1"
+                disabled={operationLoading}
+              >
+                {t("actions.cancel")}
               </Button>
-              <Button onClick={handleSubmit} disabled={!itemName.trim() || operationLoading} className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <Button
+                onClick={handleSubmit}
+                disabled={!itemName.trim() || operationLoading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
                 {operationLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('form.creating')}
+                    {t("form.creating")}
                   </>
                 ) : (
                   <>
                     <Plus className="mr-2 h-4 w-4" />
-                    {t('form.create')}
+                    {t("form.create")}
                   </>
                 )}
               </Button>
@@ -656,39 +846,77 @@ export const LocationsManager = () => {
       <Dialog open={isEditModalVisible} onOpenChange={setIsEditModalVisible}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">{t('locations.modal.editTitle')}</DialogTitle>
+            <DialogTitle className="text-xl font-semibold">
+              {t("locations.modal.editTitle")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="edit-name" className="text-sm font-medium">{t('form.name')} *</Label>
-              <Input id="edit-name" value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder={t('form.namePlaceholder')} className="h-11" />
+              <Label htmlFor="edit-name" className="text-sm font-medium">
+                {t("form.name")} *
+              </Label>
+              <Input
+                id="edit-name"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                placeholder={t("form.namePlaceholder")}
+                className="h-11"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-address" className="text-sm font-medium">
-                {t('form.address')} <span className="text-gray-500 font-normal">({t('form.optional')})</span>
+                {t("form.address")}{" "}
+                <span className="text-gray-500 font-normal">
+                  ({t("form.optional")})
+                </span>
               </Label>
-              <Input id="edit-address" value={itemAddress} onChange={(e) => setItemAddress(e.target.value)} placeholder={t('form.addressPlaceholder')} className="h-11" />
+              <Input
+                id="edit-address"
+                value={itemAddress}
+                onChange={(e) => setItemAddress(e.target.value)}
+                placeholder={t("form.addressPlaceholder")}
+                className="h-11"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-description" className="text-sm font-medium">
-                {t('form.description')} <span className="text-gray-500 font-normal">({t('form.optional')})</span>
+                {t("form.description")}{" "}
+                <span className="text-gray-500 font-normal">
+                  ({t("form.optional")})
+                </span>
               </Label>
-              <Textarea id="edit-description" value={itemDescription} onChange={(e) => setItemDescription(e.target.value)} placeholder={t('form.descriptionPlaceholder')} rows={4} className="resize-none" />
+              <Textarea
+                id="edit-description"
+                value={itemDescription}
+                onChange={(e) => setItemDescription(e.target.value)}
+                placeholder={t("form.descriptionPlaceholder")}
+                rows={4}
+                className="resize-none"
+              />
             </div>
             <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsEditModalVisible(false)} className="flex-1" disabled={operationLoading}>
-                {t('actions.cancel')}
+              <Button
+                variant="outline"
+                onClick={() => setIsEditModalVisible(false)}
+                className="flex-1"
+                disabled={operationLoading}
+              >
+                {t("actions.cancel")}
               </Button>
-              <Button onClick={handleUpdateSubmit} disabled={!itemName.trim() || operationLoading} className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <Button
+                onClick={handleUpdateSubmit}
+                disabled={!itemName.trim() || operationLoading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
                 {operationLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('form.updating')}
+                    {t("form.updating")}
                   </>
                 ) : (
                   <>
                     <Edit className="mr-2 h-4 w-4" />
-                    {t('form.update')}
+                    {t("form.update")}
                   </>
                 )}
               </Button>
@@ -697,5 +925,5 @@ export const LocationsManager = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 };

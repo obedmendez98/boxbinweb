@@ -26,6 +26,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStripePlanById } from '@/lib/stripe';
 
 export const uploadImage = async (file: File): Promise<string> => {
   const storage = getStorage();
@@ -126,7 +127,10 @@ const BinDetailsScreen: React.FC = () => {
     console.log(error);
     const fetchData = async () => {
       try {
+
         setLoading(true);
+
+        await fetchSubscription();
         setError('');
 
         const binDocRef = doc(db, 'bins', id!);
@@ -294,13 +298,59 @@ const BinDetailsScreen: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const [subscription, setSubscription] = useState<any | null>(null);
+
+  const fetchSubscription = async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const q = query(
+        collection(db, "subscriptions"),
+        where("userId", "==", currentUser.uid)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const sub = querySnapshot.docs[0].data();
+
+        if (sub.planId) {
+          const stripePlan = await getStripePlanById(sub.planId);
+
+          console.log(stripePlan);
+          const fullSubscription = {
+            ...sub,
+            plan: stripePlan?.product?.name ?? "Unknown Plan",
+            price: (stripePlan?.unit_amount ?? 0) / 100,
+            interval: stripePlan?.recurring?.interval ?? "month",
+            metadata: stripePlan?.metadata ?? {},
+          };
+
+          console.log(fullSubscription);
+
+          setSubscription(fullSubscription);
+        } else {
+          setSubscription(sub);
+        }
+      } else {
+        console.log("❌ No se encontró suscripción para el usuario.");
+      }
+    } catch (error) {
+      console.error("🔥 Error al obtener suscripción:", error);
+    }
+  };
+
   const handleSubmitItem = async () => {
+
+    // Verificar si ya alcanzó el límite
+    if (items.length >= Number(subscription?.metadata?.items)) {
+      toast.error(`You have reached the limit of ${subscription?.metadata?.items} items for your plan.`)
+      return;
+    }
+
     if (!itemName.trim()) {
       toast.error('Please enter an item name'); // o un alert nativo
       return;
     }
-
-    //setIsUploading(true);
 
     try {
       let imageUrl: string | null = null;
