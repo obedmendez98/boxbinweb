@@ -1,5 +1,6 @@
 import { loadStripe, type StripeConstructor } from '@stripe/stripe-js';
 import Stripe from 'stripe';
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 declare global {
   interface Window {
@@ -122,4 +123,12 @@ export const getStripePlanById = async (priceId: string): Promise<any> => {
     console.error(`Error retrieving plan with ID ${priceId}:`, error);
     return null;
   }
+};
+
+export const cancelUserSubscription = async (subscriptionId: string, userId: string) => {
+  const functions = getFunctions();
+  const cancelSub = httpsCallable(functions, "cancelSubscription");
+
+  const result = await cancelSub({ subscriptionId, userId });
+  return result.data;
 };
