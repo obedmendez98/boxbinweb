@@ -31,7 +31,7 @@ export const cancelSubscription = onCall(async (request) => {
         console.warn(`No subscription document found for userId: ${userId}`);
       } else {
         const batch = admin.firestore().batch();
-        snapshot.docs.forEach((doc) => {
+        snapshot.docs.forEach((doc: any) => {
           batch.delete(doc.ref);
         });
         await batch.commit();

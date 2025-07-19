@@ -19,6 +19,7 @@ interface StripeProduct {
       interval: string;
     };
   };
+  metadata: any
 }
 
 interface Plan {
@@ -31,6 +32,7 @@ interface Plan {
   recurring: {
     interval: string;
   };
+  metadata: any
 }
 
 import { STRIPE_PUBLISHABLE_KEY } from '../config/stripe';
@@ -49,6 +51,8 @@ export const getStripePlans = async (): Promise<Plan[]> => {
       active: true,
       expand: ['data.default_price']
     }) as { data: StripeProduct[] };
+
+    console.log(products);
     
     return products.map((product: StripeProduct) => ({
       id: product.default_price?.id || '',
@@ -57,7 +61,8 @@ export const getStripePlans = async (): Promise<Plan[]> => {
         description: product.description 
       },
       unit_amount: product.default_price?.unit_amount || 0,
-      recurring: product.default_price?.recurring || { interval: 'month' }
+      recurring: product.default_price?.recurring || { interval: 'month' },
+      metadata: product?.metadata
     }));
   } catch (error) {
     console.error('Error fetching Stripe plans:', error);

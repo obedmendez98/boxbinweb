@@ -268,6 +268,34 @@ export default function BillingPage() {
                           </p>
                         </div>
 
+                        {/* Aquí van los features */}
+                        <div className="mb-4 space-y-1 text-sm text-gray-700">
+                          {plan.metadata?.bins && (
+                            <p>
+                              📦 Bins:{" "}
+                              <span className="font-semibold">
+                                {plan.metadata.bins}
+                              </span>
+                            </p>
+                          )}
+                          {plan.metadata?.items && (
+                            <p>
+                              📦 Items:{" "}
+                              <span className="font-semibold">
+                                {plan.metadata.items}
+                              </span>
+                            </p>
+                          )}
+                          {plan.metadata?.locations && (
+                            <p>
+                              📍 Locations:{" "}
+                              <span className="font-semibold">
+                                {plan.metadata.locations}
+                              </span>
+                            </p>
+                          )}
+                        </div>
+
                         <Button
                           className={`w-full py-3 text-sm font-semibold transition-all duration-300 ${
                             isSelected

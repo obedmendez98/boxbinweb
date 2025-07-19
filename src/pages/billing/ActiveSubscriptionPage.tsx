@@ -4,9 +4,8 @@ import { db } from "@/lib/firebase";
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import LogoIcon from "@/assets/logo.png";
 import { Loader2, Sparkles, CheckCircle } from "lucide-react";
-import { getStripePlanById } from "@/lib/stripe";
+import { cancelUserSubscription, getStripePlanById } from "@/lib/stripe";
 
 export default function ActiveSubscriptionPage() {
   const { currentUser } = useAuth();
@@ -14,29 +13,29 @@ export default function ActiveSubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
 
-  const handleManageSubscription = async () => {
-    if (!subscription?.stripeCustomerId) return;
+  const handleCancelSubscription = async () => {
+    if (!subscription?.stripeSubscriptionId || !subscription?.userId) return;
+
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel your subscription?"
+    );
+    if (!confirmCancel) return;
+
     setRedirecting(true);
 
     try {
-      const res = await fetch(
-        "https://us-central1-TU_PROYECTO.cloudfunctions.net/createStripePortalLink",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            customerId: subscription.stripeCustomerId,
-          }),
-        }
+      await cancelUserSubscription(
+        subscription.stripeSubscriptionId,
+        subscription.userId
       );
-
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch (err) {
-      console.error("Failed to redirect:", err);
-      alert("Error creating portal session");
+      alert("Subscription canceled successfully");
+      // Actualiza el estado para reflejar que no hay subscripción
+      setSubscription(null);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      alert("Failed to cancel subscription");
+    } finally {
       setRedirecting(false);
     }
   };
@@ -112,18 +111,20 @@ export default function ActiveSubscriptionPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <img src={LogoIcon} alt="boxbin logo" className="h-10" />
-              <div className="h-6 w-px bg-gray-300"></div>
-              <span className="text-gray-600 font-medium">My Subscription</span>
+
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                My Subscription
+              </h1>
             </div>
+
           </div>
         </div>
       </div>
 
       {/* Subscription Info */}
-      <div className="max-w-3xl mx-auto py-10">
-        <div className="text-center mb-8">
+      <div className="max-w-3xl mx-auto py-4">
+        <div className="text-center mb-4">
           <div className="inline-flex items-center space-x-2 text-indigo-600">
             <Sparkles className="w-6 h-6" />
             <span className="text-sm font-semibold uppercase tracking-wide">
@@ -149,7 +150,7 @@ export default function ActiveSubscriptionPage() {
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-4 px-6 pb-6">
+          <CardContent className="space-y-2 px-4 pb-4">
             <div className="flex justify-between text-sm text-gray-700">
               <span>Status</span>
               <span
@@ -187,16 +188,16 @@ export default function ActiveSubscriptionPage() {
 
             <Button
               disabled={redirecting}
-              onClick={handleManageSubscription}
-              className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={handleCancelSubscription}
+              className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white"
             >
               {redirecting ? (
                 <span className="flex items-center justify-center space-x-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Redirecting...</span>
+                  <span>Cancelling...</span>
                 </span>
               ) : (
-                <span>Manage Subscription</span>
+                "Cancel Subscription"
               )}
             </Button>
           </CardContent>
