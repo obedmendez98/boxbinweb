@@ -1,21 +1,16 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
-
 import { useCallback, useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import CheckoutForm from "./CheckoutForm.tsx";
 import { Navigate } from "react-router-dom";
-
 import { Button } from "@/components/ui/button";
 import { getStripePlans } from "../../lib/stripe";
-
 import LogoIcon from "@/assets/logo.png";
-
 import { STRIPE_PUBLISHABLE_KEY } from "../../config/stripe";
 import { Check, Sparkles, Crown, Star, Zap } from "lucide-react";
 

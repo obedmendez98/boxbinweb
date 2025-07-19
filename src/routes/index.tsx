@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import BinDetailsPage from '@/pages/dashboard/binDetail';
 import { LocationsManager } from '@/pages/dashboard/Locations';
 import SocialScreen from '@/pages/dashboard/SocialScreen';
+import ActiveSubscriptionPage from '@/pages/billing/ActiveSubscriptionPage';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -118,6 +119,15 @@ const router = createBrowserRouter([
         element: (
             <ProtectedRoute>
                 <SocialScreen />
+            </ProtectedRoute>
+        ),
+    },
+
+    {
+        path: '/subscription',
+        element: (
+            <ProtectedRoute>
+                <ActiveSubscriptionPage />
             </ProtectedRoute>
         ),
     },
