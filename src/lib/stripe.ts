@@ -95,3 +95,31 @@ export const createStripeSubscription = async (paymentMethodId: string, planId: 
     throw error;
   }
 };
+
+export const getStripePlanById = async (priceId: string): Promise<any> => {
+  try {
+    const price = await stripeClient.prices.retrieve(priceId, {
+      expand: ['product'],
+    });
+
+    if (!price || typeof price.product !== 'object') {
+      return null;
+    }
+
+    const product = price.product as Stripe.Product;
+
+    return {
+      priceId: price.id,
+      product: {
+        name: product.name,
+        description: product.description,
+      },
+      unit_amount: price.unit_amount ?? 0,
+      recurring: price.recurring ?? null,
+      ...product,
+    };
+  } catch (error) {
+    console.error(`Error retrieving plan with ID ${priceId}:`, error);
+    return null;
+  }
+};
