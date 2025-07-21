@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, CheckCircle, Crown, Check, Zap, Star, Package, MapPin } from "lucide-react";
-import { cancelUserSubscription, getStripePlanById, getStripePlans } from "@/lib/stripe";
+import { cancelUserSubscription, getStripePlanById, getStripePlans, upgradeSubscription } from "@/lib/stripe";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function ActiveSubscriptionPage() {
   const { currentUser } = useAuth();
@@ -34,6 +35,7 @@ export default function ActiveSubscriptionPage() {
   const [upgradingToPlan, setUpgradingToPlan] = useState<any>(null);
 
   const handleCancelSubscription = async () => {
+    setUpgradingToPlan(null);
     if (!subscription?.stripeSubscriptionId || !subscription?.userId) return;
     setRedirecting(true);
 
@@ -85,35 +87,27 @@ export default function ActiveSubscriptionPage() {
   };
 
 const handleUpgradeToPlan = async (newPriceId: string) => {
-  try {
-    setUpgradingToPlan(newPriceId);
+  if (!subscription?.id || !currentUser?.uid) return;
 
-    const res = await fetch('https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/upgradeSubscription', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subscriptionId: subscription.id,
-        newPriceId,
-        userId: currentUser?.uid,
-      }),
+  try {
+    //setIsLoading(true);
+    const result = await upgradeSubscription({
+      subscriptionId: subscription.id,
+      newPriceId,
+      userId: currentUser?.uid,
     });
 
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Upgrade failed');
-    }
-
-    //showAlertMessage('success', 'Plan actualizado correctamente');
-    setShowUpgradeModal(false);
-    //await refetchSubscription(); // tu lógica para actualizar la suscripción en frontend
-  } catch (err) {
-    console.error('Error al actualizar el plan:', err);
-    //showAlertMessage('error', 'No se pudo actualizar el plan');
+    console.log("Upgrade exitoso:", result);
+    toast.success("¡Tu suscripción fue actualizada!");
+    // Recarga la página o actualiza el estado según necesites
+  } catch (error: any) {
+    console.error("Error al actualizar plan:", error);
+    toast.error("Hubo un problema al actualizar tu suscripción.");
   } finally {
-    setUpgradingToPlan(null);
+    //setIsLoading(false);
   }
 };
+
 
 
   useEffect(() => {

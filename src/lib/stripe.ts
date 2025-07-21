@@ -137,3 +137,18 @@ export const cancelUserSubscription = async (subscriptionId: string, userId: str
   const result = await cancelSub({ subscriptionId, userId });
   return result.data;
 };
+
+export const upgradeSubscription = async ({
+  subscriptionId,
+  newPriceId,
+  userId,
+}: {
+  subscriptionId: string;
+  newPriceId: string;
+  userId: string;
+}) => {
+  const functions = getFunctions();
+  const fn = httpsCallable(functions, "upgradeSubscription");
+  const result = await fn({ subscriptionId, newPriceId, userId });
+  return result.data;
+};
