@@ -2,7 +2,7 @@ import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, FieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createStripeSubscription } from '@/lib/stripe';
 
@@ -58,10 +58,11 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         userId,
         planId,
         status: 'active',
-        createdAt: new Date(),
         paymentMethod: paymentMethod.id,
         stripeSubscriptionId: subscriptionId,
-        stripeCustomerId: customerId
+        stripeCustomerId: customerId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
       // Redirect to dashboard after successful payment
