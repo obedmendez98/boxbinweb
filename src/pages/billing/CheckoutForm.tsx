@@ -1,5 +1,7 @@
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { addDoc, collection } from 'firebase/firestore';
@@ -17,6 +19,13 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
   const { currentUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zipCode, setZipCode] = useState('');
+  const [nameOnCard, setNameOnCard] = useState('');
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -32,6 +41,17 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
       const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: elements.getElement(CardElement)!,
+        billing_details: {
+          name: nameOnCard,
+          email: currentUser?.email,
+          address: {
+            line1: address,
+            city: city,
+            state: state,
+            postal_code: zipCode,
+            country: 'US'
+          }
+        }
       });
 
       if (stripeError) {
@@ -51,6 +71,15 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         userEmail || undefined,
         userName || undefined,
         currentUser?.uid ?? "",
+        {
+          firstName,
+          lastName,
+          address,
+          city,
+          state,
+          zipCode,
+          nameOnCard
+        }
       );
 
       // Save subscription details to Firestore
@@ -61,6 +90,15 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         paymentMethod: paymentMethod.id,
         stripeSubscriptionId: subscriptionId,
         stripeCustomerId: customerId,
+        billingDetails: {
+          firstName,
+          lastName,
+          address,
+          city,
+          state,
+          zipCode,
+          nameOnCard
+        },
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -76,8 +114,83 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <CardElement className="p-2 border rounded" />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="firstName">First Name</Label>
+          <Input
+            id="firstName"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="lastName">Last Name</Label>
+          <Input
+            id="lastName"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="address">Billing Address</Label>
+        <Input
+          id="address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="city">City</Label>
+          <Input
+            id="city"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="state">State</Label>
+          <Input
+            id="state"
+            value={state}
+            onChange={(e) => setState(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="zipCode">ZIP Code</Label>
+          <Input
+            id="zipCode"
+            value={zipCode}
+            onChange={(e) => setZipCode(e.target.value)}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="nameOnCard">Name on Card</Label>
+        <Input
+          id="nameOnCard"
+          value={nameOnCard}
+          onChange={(e) => setNameOnCard(e.target.value)}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Card Information</Label>
+        <CardElement className="p-3 border rounded-md" />
+      </div>
+
       {error && <p className="text-red-500 text-sm">{error}</p>}
       <Button type="submit" className="w-full" disabled={!stripe || loading}>
         {loading ? 'Processing...' : 'Subscribe'}

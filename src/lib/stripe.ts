@@ -74,7 +74,16 @@ export const createStripeSubscription = async (
   customerId?: string,
   userEmail?: string,
   userName?: string,
-  userId?: string
+  userId?: string,
+  billingDetails?: {
+    firstName: string;
+    lastName: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    nameOnCard: string;
+  }
 ) => {
   try {
     let customer;
@@ -86,17 +95,37 @@ export const createStripeSubscription = async (
         },
       });
     } else {
+      // Create customer first
       customer = await stripeClient.customers.create({
-        payment_method: paymentMethodId,
         email: userEmail,
-        name: userName,
+        name: billingDetails?.nameOnCard || userName,
         metadata: {
           userId: userId || '',
+          firstName: billingDetails?.firstName,
+          lastName: billingDetails?.lastName
         },
-        invoice_settings: {
-          default_payment_method: paymentMethodId,
-        },
+        address: billingDetails ? {
+          line1: billingDetails.address,
+          city: billingDetails.city,
+          state: billingDetails.state,
+          postal_code: billingDetails.zipCode,
+          country: 'US'
+        } : undefined
       });
+
+      // Then attach the payment method to the customer
+      if (paymentMethodId) {
+        await stripeClient.paymentMethods.attach(paymentMethodId, {
+          customer: customer.id,
+        });
+
+        // Set it as the default payment method
+        await stripeClient.customers.update(customer.id, {
+          invoice_settings: {
+            default_payment_method: paymentMethodId,
+          },
+        });
+      }
     }
 
     const subscription = await stripeClient.subscriptions.create({

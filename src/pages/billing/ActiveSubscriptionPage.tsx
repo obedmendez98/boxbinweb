@@ -408,7 +408,7 @@ export default function ActiveSubscriptionPage() {
               ) : (
                 <div className="space-y-4">
                   {/* Grid de planes más compacto */}
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  <div className={`grid gap-4 grid-cols-1 ${plans.length === 1 ? 'md:grid-cols-1' : plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
                     {plans.map((plan: any) => (
                       <div key={plan.id} className="relative">
                         {/* Badge de popular más pequeño */}
