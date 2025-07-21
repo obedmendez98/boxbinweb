@@ -89,6 +89,8 @@ export default function ActiveSubscriptionPage() {
         return planPrice > currentPlanPrice;
       });
 
+      console.log(superiorPlans);
+
       // Ordenar de menor a mayor precio
       const sortedPlans = superiorPlans.sort(
         (a, b) => a.unit_amount - b.unit_amount
@@ -362,7 +364,7 @@ export default function ActiveSubscriptionPage() {
                     <Loader2 className="w-6 h-6 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                    Loading Plans
+                    Loading......
                   </h3>
                   <p className="text-gray-600 text-sm">Please wait...</p>
                 </div>
@@ -465,7 +467,7 @@ export default function ActiveSubscriptionPage() {
                                 }
                               `}
                               >
-                                ${((plan.unit_amount || 0) / 100).toFixed(0)}
+                                ${((plan.unit_amount || 0) / 100).toFixed(2)}
                               </div>
                               <div className="text-gray-600 text-sm">
                                 per {plan.recurring?.interval || "month"}
