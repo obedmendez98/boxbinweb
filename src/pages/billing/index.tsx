@@ -241,7 +241,7 @@ export default function BillingPage() {
                     )}
 
                     <Card
-                      className={`relative h-full transition-all duration-300 ${
+                      className={`relative h-full transition-all duration-300 flex flex-col ${
                         isSelected
                           ? "border-2 border-indigo-500 shadow-xl bg-indigo-50"
                           : isHovered
@@ -279,7 +279,7 @@ export default function BillingPage() {
                         )}
                       </CardHeader>
 
-                      <CardContent className="pt-0 pb-4">
+                      <CardContent className="pt-0 pb-4 flex-1 flex flex-col">
                         <div className="text-center mb-2">
                           <div className="flex items-baseline justify-center gap-1 mb-1">
                             <span className="text-3xl font-bold text-gray-900">
@@ -295,7 +295,7 @@ export default function BillingPage() {
                         </div>
 
                         {/* Aquí van los features */}
-                        <div className="mb-4 space-y-1 text-sm text-gray-700">
+                        <div className="mb-4 space-y-1 text-sm text-gray-700 flex-1">
                           {plan.metadata?.bins && (
                             <p>
                               📦 Bins:{" "}

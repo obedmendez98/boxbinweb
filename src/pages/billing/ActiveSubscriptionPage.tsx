@@ -226,8 +226,10 @@ export default function ActiveSubscriptionPage() {
             Your <span className="text-indigo-600">Subscription</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-xl mx-auto leading-relaxed">
-            Here are the details of your current subscription. You can manage or
-            cancel anytime.
+            Here are the details of your current subscription. 
+          </p>
+          <p className="text-lg text-gray-600 max-w-xl mx-auto leading-relaxed">
+            You can manage or cancel anytime.
           </p>
         </div>
 
@@ -481,9 +483,9 @@ export default function ActiveSubscriptionPage() {
                             )}
                           </CardHeader>
 
-                          <CardContent className="space-y-3 relative z-10 flex-1 flex flex-col justify-between px-4 pb-4">
+                          <CardContent className="space-y-3 relative z-10 flex-1 flex flex-col h-full px-4 pb-4">
                             {/* Features más compactas */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 flex-grow">
                               {plan.metadata?.bins && (
                                 <div className="flex items-center text-sm">
                                   <div
