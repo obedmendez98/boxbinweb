@@ -1,5 +1,6 @@
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -13,6 +14,7 @@ type CheckoutFormProps = {
 export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
+  const { currentUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,10 +39,17 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         return;
       }
 
+      // Get user information
+      const userEmail = currentUser?.email;
+      const userName = currentUser?.displayName;
+
       // Create Stripe subscription
       const { subscriptionId, customerId } = await createStripeSubscription(
         paymentMethod.id,
-        planId
+        planId,
+        undefined,
+        userEmail || undefined,
+        userName || undefined
       );
 
       // Save subscription details to Firestore

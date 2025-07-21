@@ -45,14 +45,20 @@ export default function BillingPage() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setSubscription(docSnap.data());
+          const subData = docSnap.data();
+          setSubscription(subData);
+          // Filter plans to only show higher tiers
+          const currentPlanIndex = plans.findIndex(plan => plan.id === subData.planId);
+          if (currentPlanIndex !== -1) {
+            setPlans(plans.slice(currentPlanIndex + 1));
+          }
         }
         setLoading(false);
       }
     };
 
     checkSubscription();
-  }, [currentUser]);
+  }, [currentUser, plans]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +105,27 @@ export default function BillingPage() {
     );
   }
 
-  if (subscription) {
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-6"></div>
+            <div
+              className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-400 rounded-full animate-spin mx-auto"
+              style={{
+                animationDirection: "reverse",
+                animationDuration: "1.5s",
+              }}
+            ></div>
+          </div>
+          <p className="text-gray-600 font-medium">Loading your account...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (subscription && plans.length === 0) {
     return <Navigate to="/home" replace />;
   }
 

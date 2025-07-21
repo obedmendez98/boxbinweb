@@ -68,13 +68,15 @@ export const getStripePlans = async (): Promise<Plan[]> => {
   }
 };
 
-export const createStripeSubscription = async (paymentMethodId: string, planId: string, customerId?: string) => {
+export const createStripeSubscription = async (paymentMethodId: string, planId: string, customerId?: string, userEmail?: string, userName?: string) => {
   try {
     // Create or use existing customer
     const customer = customerId 
       ? await stripeClient.customers.retrieve(customerId)
       : await stripeClient.customers.create({
           payment_method: paymentMethodId,
+          email: userEmail,
+          name: userName,
           invoice_settings: {
             default_payment_method: paymentMethodId
           }

@@ -6,6 +6,16 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, CheckCircle } from "lucide-react";
 import { cancelUserSubscription, getStripePlanById } from "@/lib/stripe";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ActiveSubscriptionPage() {
   const { currentUser } = useAuth();
@@ -13,14 +23,10 @@ export default function ActiveSubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
 
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
   const handleCancelSubscription = async () => {
     if (!subscription?.stripeSubscriptionId || !subscription?.userId) return;
-
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel your subscription?"
-    );
-    if (!confirmCancel) return;
-
     setRedirecting(true);
 
     try {
@@ -28,8 +34,6 @@ export default function ActiveSubscriptionPage() {
         subscription.stripeSubscriptionId,
         subscription.userId
       );
-      alert("Subscription canceled successfully");
-      // Actualiza el estado para reflejar que no hay subscripción
       setSubscription(null);
       window.location.reload();
     } catch (error) {
@@ -141,7 +145,45 @@ export default function ActiveSubscriptionPage() {
         </div>
 
         <Card className="border border-gray-200 shadow-lg">
-          <CardHeader className="text-center">
+          <CardHeader className="text-center relative">
+            <div className="absolute top-4 right-4">
+              <Button
+                disabled={redirecting}
+                onClick={() => setShowCancelDialog(true)}
+                className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 h-8"
+                size="sm"
+              >
+                Cancel Subscription
+              </Button>
+
+              <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to cancel your subscription? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>No, keep my subscription</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelSubscription}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={redirecting}
+                    >
+                      {redirecting ? (
+                        <span className="flex items-center justify-center space-x-1">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Cancelling...</span>
+                        </span>
+                      ) : (
+                        "Yes, cancel subscription"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
             <div className="w-12 h-12 mx-auto mb-4 bg-indigo-600 rounded-full flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-white" />
             </div>
@@ -188,16 +230,19 @@ export default function ActiveSubscriptionPage() {
 
             <Button
               disabled={redirecting}
-              onClick={handleCancelSubscription}
-              className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => window.location.href = '/billing'}
+              className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
             >
               {redirecting ? (
                 <span className="flex items-center justify-center space-x-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Cancelling...</span>
+                  <span>Redirecting...</span>
                 </span>
               ) : (
-                "Cancel Subscription"
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  <span>Upgrade to Premium</span>
+                </>
               )}
             </Button>
           </CardContent>
