@@ -2,7 +2,7 @@ import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { addDoc, collection, FieldValue } from 'firebase/firestore';
+import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createStripeSubscription } from '@/lib/stripe';
 
