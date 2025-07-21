@@ -49,7 +49,8 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         planId,
         undefined,
         userEmail || undefined,
-        userName || undefined
+        userName || undefined,
+        currentUser?.uid ?? "",
       );
 
       // Save subscription details to Firestore

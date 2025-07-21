@@ -4,8 +4,23 @@ import { db } from "@/lib/firebase";
 import { useCallback, useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, CheckCircle, Crown, Check, Zap, Star, Package, MapPin } from "lucide-react";
-import { cancelUserSubscription, getStripePlanById, getStripePlans, upgradeSubscription } from "@/lib/stripe";
+import {
+  Loader2,
+  Sparkles,
+  CheckCircle,
+  Crown,
+  Check,
+  Zap,
+  Star,
+  Package,
+  MapPin,
+} from "lucide-react";
+import {
+  cancelUserSubscription,
+  getStripePlanById,
+  getStripePlans,
+  upgradeSubscription,
+} from "@/lib/stripe";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +31,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export default function ActiveSubscriptionPage() {
@@ -60,17 +80,19 @@ export default function ActiveSubscriptionPage() {
       setPlansError(null);
       const stripePlans = await getStripePlans();
 
-      console.log('All plans:', stripePlans);
+      console.log("All plans:", stripePlans);
 
       // Filtrar solo los planes superiores al actual
       const currentPlanPrice = subscription?.price || 0;
-      const superiorPlans = stripePlans.filter(plan => {
+      const superiorPlans = stripePlans.filter((plan) => {
         const planPrice = (plan.unit_amount || 0) / 100;
         return planPrice > currentPlanPrice;
       });
 
       // Ordenar de menor a mayor precio
-      const sortedPlans = superiorPlans.sort((a, b) => a.unit_amount - b.unit_amount);
+      const sortedPlans = superiorPlans.sort(
+        (a, b) => a.unit_amount - b.unit_amount
+      );
 
       setPlans(sortedPlans);
     } catch (error) {
@@ -86,29 +108,29 @@ export default function ActiveSubscriptionPage() {
     fetchPlans();
   };
 
-const handleUpgradeToPlan = async (newPriceId: string) => {
-  if (!subscription?.id || !currentUser?.uid) return;
+  const handleUpgradeToPlan = async (newPriceId: string) => {
+    console.log(subscription);
+    console.log(currentUser?.uid);
+    if (!subscription?.stripeSubscriptionId || !currentUser?.uid) return;
 
-  try {
-    //setIsLoading(true);
-    const result = await upgradeSubscription({
-      subscriptionId: subscription.id,
-      newPriceId,
-      userId: currentUser?.uid,
-    });
+    try {
+      //setIsLoading(true);
+      const result = await upgradeSubscription({
+        subscriptionId: subscription?.stripeSubscriptionId,
+        newPriceId,
+        userId: currentUser?.uid,
+      });
 
-    console.log("Upgrade exitoso:", result);
-    toast.success("¡Tu suscripción fue actualizada!");
-    // Recarga la página o actualiza el estado según necesites
-  } catch (error: any) {
-    console.error("Error al actualizar plan:", error);
-    toast.error("Hubo un problema al actualizar tu suscripción.");
-  } finally {
-    //setIsLoading(false);
-  }
-};
-
-
+      console.log("Upgrade exitoso:", result);
+      toast.success("¡Tu suscripción fue actualizada!");
+      // Recarga la página o actualiza el estado según necesites
+    } catch (error: any) {
+      console.error("Error al actualizar plan:", error);
+      toast.error("Hubo un problema al actualizar tu suscripción.");
+    } finally {
+      //setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -181,13 +203,11 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex justify-between items-center">
-
             <div className="space-y-1">
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
                 My Subscription
               </h1>
             </div>
-
           </div>
         </div>
       </div>
@@ -222,16 +242,22 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
                 Cancel Subscription
               </Button>
 
-              <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+              <AlertDialog
+                open={showCancelDialog}
+                onOpenChange={setShowCancelDialog}
+              >
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to cancel your subscription? This action cannot be undone.
+                      Are you sure you want to cancel your subscription? This
+                      action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>No, keep my subscription</AlertDialogCancel>
+                    <AlertDialogCancel>
+                      No, keep my subscription
+                    </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleCancelSubscription}
                       className="bg-red-600 hover:bg-red-700 text-white"
@@ -296,8 +322,7 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
 
             <Button
               disabled={redirecting}
-                            onClick={handleUpgradeClick}
-
+              onClick={handleUpgradeClick}
               className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
             >
               {redirecting ? (
@@ -316,11 +341,10 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
         </Card>
       </div>
 
-     <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
         <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] flex flex-col">
           {/* Header compacto y fijo */}
           <DialogHeader className="text-center space-y-2 pb-4 flex-shrink-0 border-b border-gray-100">
-
             <DialogTitle className="text-2xl font-bold text-gray-900">
               Upgrade Your Plan
             </DialogTitle>
@@ -338,7 +362,9 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
                     <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full animate-pulse"></div>
                     <Loader2 className="w-6 h-6 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1">Loading Plans</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                    Loading Plans
+                  </h3>
                   <p className="text-gray-600 text-sm">Please wait...</p>
                 </div>
               ) : plansError ? (
@@ -346,10 +372,12 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Crown className="w-8 h-8 text-red-500" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Something went wrong
+                  </h3>
                   <p className="text-red-600 mb-4 text-sm">{plansError}</p>
-                  <Button 
-                    onClick={fetchPlans} 
+                  <Button
+                    onClick={fetchPlans}
                     variant="outline"
                     size="sm"
                     className="hover:bg-red-50 border-red-200"
@@ -372,7 +400,8 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
                     You're Already at the Top! 👑
                   </h3>
                   <p className="text-gray-600 max-w-md mx-auto text-sm leading-relaxed">
-                    You're already enjoying our highest tier with all premium features.
+                    You're already enjoying our highest tier with all premium
+                    features.
                   </p>
                 </div>
               ) : (
@@ -391,27 +420,33 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
                           </div>
                         )}
 
-                        <Card className={`
+                        <Card
+                          className={`
                           relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1 border-2 h-full
-                          ${plan.popular 
-                            ? 'border-gradient-to-r from-orange-400 to-pink-500 shadow-md' 
-                            : 'border-gray-200 hover:border-indigo-300'
+                          ${
+                            plan.popular
+                              ? "border-gradient-to-r from-orange-400 to-pink-500 shadow-md"
+                              : "border-gray-200 hover:border-indigo-300"
                           }
-                        `}>
+                        `}
+                        >
                           {/* Efecto de gradiente sutil para plan popular */}
                           {plan.popular && (
                             <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-pink-50 opacity-30"></div>
                           )}
-                          
+
                           <CardHeader className="text-center pb-3 relative z-10">
                             {/* Icono más pequeño */}
-                            <div className={`
+                            <div
+                              className={`
                               w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center
-                              ${plan.popular 
-                                ? 'bg-gradient-to-br from-orange-400 to-pink-500' 
-                                : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                              ${
+                                plan.popular
+                                  ? "bg-gradient-to-br from-orange-400 to-pink-500"
+                                  : "bg-gradient-to-br from-indigo-500 to-purple-600"
                               }
-                            `}>
+                            `}
+                            >
                               <Crown className="w-5 h-5 text-white" />
                             </div>
 
@@ -421,13 +456,16 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
 
                             {/* Precio más compacto */}
                             <div className="mb-2">
-                              <div className={`
+                              <div
+                                className={`
                                 text-2xl font-bold mb-0
-                                ${plan.popular 
-                                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent' 
-                                  : 'text-indigo-600'
+                                ${
+                                  plan.popular
+                                    ? "bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent"
+                                    : "text-indigo-600"
                                 }
-                              `}>
+                              `}
+                              >
                                 ${((plan.unit_amount || 0) / 100).toFixed(0)}
                               </div>
                               <div className="text-gray-600 text-sm">
@@ -447,39 +485,75 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
                             <div className="space-y-2">
                               {plan.metadata?.bins && (
                                 <div className="flex items-center text-sm">
-                                  <div className={`
+                                  <div
+                                    className={`
                                     w-4 h-4 rounded-full flex items-center justify-center mr-2
-                                    ${plan.popular ? 'bg-orange-100' : 'bg-green-100'}
-                                  `}>
-                                    <Package className={`w-3 h-3 ${plan.popular ? 'text-orange-500' : 'text-green-500'}`} />
+                                    ${
+                                      plan.popular
+                                        ? "bg-orange-100"
+                                        : "bg-green-100"
+                                    }
+                                  `}
+                                  >
+                                    <Package
+                                      className={`w-3 h-3 ${
+                                        plan.popular
+                                          ? "text-orange-500"
+                                          : "text-green-500"
+                                      }`}
+                                    />
                                   </div>
                                   <span className="font-medium text-gray-800 truncate">
                                     {plan.metadata.bins} bins
                                   </span>
                                 </div>
                               )}
-                              
+
                               {plan.metadata?.items && (
                                 <div className="flex items-center text-sm">
-                                  <div className={`
+                                  <div
+                                    className={`
                                     w-4 h-4 rounded-full flex items-center justify-center mr-2
-                                    ${plan.popular ? 'bg-orange-100' : 'bg-green-100'}
-                                  `}>
-                                    <Zap className={`w-3 h-3 ${plan.popular ? 'text-orange-500' : 'text-green-500'}`} />
+                                    ${
+                                      plan.popular
+                                        ? "bg-orange-100"
+                                        : "bg-green-100"
+                                    }
+                                  `}
+                                  >
+                                    <Zap
+                                      className={`w-3 h-3 ${
+                                        plan.popular
+                                          ? "text-orange-500"
+                                          : "text-green-500"
+                                      }`}
+                                    />
                                   </div>
                                   <span className="font-medium text-gray-800 truncate">
                                     {plan.metadata.items} items
                                   </span>
                                 </div>
                               )}
-                              
+
                               {plan.metadata?.locations && (
                                 <div className="flex items-center text-sm">
-                                  <div className={`
+                                  <div
+                                    className={`
                                     w-4 h-4 rounded-full flex items-center justify-center mr-2
-                                    ${plan.popular ? 'bg-orange-100' : 'bg-green-100'}
-                                  `}>
-                                    <MapPin className={`w-3 h-3 ${plan.popular ? 'text-orange-500' : 'text-green-500'}`} />
+                                    ${
+                                      plan.popular
+                                        ? "bg-orange-100"
+                                        : "bg-green-100"
+                                    }
+                                  `}
+                                  >
+                                    <MapPin
+                                      className={`w-3 h-3 ${
+                                        plan.popular
+                                          ? "text-orange-500"
+                                          : "text-green-500"
+                                      }`}
+                                    />
                                   </div>
                                   <span className="font-medium text-gray-800 truncate">
                                     {plan.metadata.locations} locations
@@ -495,11 +569,16 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
                               size="sm"
                               className={`
                                 w-full font-semibold transition-all duration-200 relative overflow-hidden
-                                ${plan.popular 
-                                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg' 
-                                  : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white hover:shadow-md'
+                                ${
+                                  plan.popular
+                                    ? "bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg"
+                                    : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white hover:shadow-md"
                                 }
-                                ${upgradingToPlan === plan.id ? 'animate-pulse' : ''}
+                                ${
+                                  upgradingToPlan === plan.id
+                                    ? "animate-pulse"
+                                    : ""
+                                }
                               `}
                             >
                               {upgradingToPlan === plan.id ? (
@@ -523,10 +602,8 @@ const handleUpgradeToPlan = async (newPriceId: string) => {
               )}
             </div>
           </div>
-
         </DialogContent>
       </Dialog>
-      
     </div>
   );
 }
