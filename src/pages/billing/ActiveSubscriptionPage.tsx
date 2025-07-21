@@ -109,12 +109,10 @@ export default function ActiveSubscriptionPage() {
   };
 
   const handleUpgradeToPlan = async (newPriceId: string) => {
-    console.log(subscription);
-    console.log(currentUser?.uid);
     if (!subscription?.stripeSubscriptionId || !currentUser?.uid) return;
 
     try {
-      //setIsLoading(true);
+      setPlansLoading(true);
       const result = await upgradeSubscription({
         subscriptionId: subscription?.stripeSubscriptionId,
         newPriceId,
@@ -123,7 +121,8 @@ export default function ActiveSubscriptionPage() {
 
       console.log("Upgrade exitoso:", result);
       toast.success("¡Tu suscripción fue actualizada!");
-      // Recarga la página o actualiza el estado según necesites
+      setPlansLoading(true);
+      window.location.reload();
     } catch (error: any) {
       console.error("Error al actualizar plan:", error);
       toast.error("Hubo un problema al actualizar tu suscripción.");
