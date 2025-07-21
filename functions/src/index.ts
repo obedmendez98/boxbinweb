@@ -43,3 +43,53 @@ export const cancelSubscription = onCall(async (request) => {
       throw new functions.https.HttpsError("internal", error.message);
     }
 });
+
+export const upgradeSubscription = functions.https.onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method not allowed');
+  }
+
+  try {
+    const { subscriptionId, newPriceId, userId } = req.body;
+
+    if (!subscriptionId || !newPriceId || !userId) {
+      return res.status(400).json({ error: 'Missing parameters' });
+    }
+
+    // Obtener la suscripción actual desde Stripe
+    const currentSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    // Hacer el upgrade
+    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: false,
+      proration_behavior: 'create_prorations',
+      items: [
+        {
+          id: currentSubscription.items.data[0].id,
+          price: newPriceId,
+        },
+      ],
+    });
+
+    // Actualizar tu Firestore (si guardas el plan ahí)
+    const subSnap = await db
+      .collection('subscriptions')
+      .where('userId', '==', userId)
+      .get();
+
+    for (const doc of subSnap.docs) {
+      await doc.ref.update({
+        planId: newPriceId,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      subscription: updatedSubscription,
+    });
+  } catch (err) {
+    console.error('Error upgrading subscription:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});

@@ -1,11 +1,11 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, CheckCircle } from "lucide-react";
-import { cancelUserSubscription, getStripePlanById } from "@/lib/stripe";
+import { Loader2, Sparkles, CheckCircle, Crown, Check, Zap, Star, Package, MapPin } from "lucide-react";
+import { cancelUserSubscription, getStripePlanById, getStripePlans } from "@/lib/stripe";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function ActiveSubscriptionPage() {
   const { currentUser } = useAuth();
@@ -24,6 +25,13 @@ export default function ActiveSubscriptionPage() {
   const [redirecting, setRedirecting] = useState(false);
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  // Estados para el modal de upgrade
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [plans, setPlans] = useState<any>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [plansError, setPlansError] = useState<any>(null);
+  const [upgradingToPlan, setUpgradingToPlan] = useState<any>(null);
 
   const handleCancelSubscription = async () => {
     if (!subscription?.stripeSubscriptionId || !subscription?.userId) return;
@@ -43,6 +51,70 @@ export default function ActiveSubscriptionPage() {
       setRedirecting(false);
     }
   };
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      setPlansLoading(true);
+      setPlansError(null);
+      const stripePlans = await getStripePlans();
+
+      console.log('All plans:', stripePlans);
+
+      // Filtrar solo los planes superiores al actual
+      const currentPlanPrice = subscription?.price || 0;
+      const superiorPlans = stripePlans.filter(plan => {
+        const planPrice = (plan.unit_amount || 0) / 100;
+        return planPrice > currentPlanPrice;
+      });
+
+      // Ordenar de menor a mayor precio
+      const sortedPlans = superiorPlans.sort((a, b) => a.unit_amount - b.unit_amount);
+
+      setPlans(sortedPlans);
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+      setPlansError(`Failed to load plans. Please try again later.`);
+    } finally {
+      setPlansLoading(false);
+    }
+  }, [subscription?.price]);
+
+  const handleUpgradeClick = () => {
+    setShowUpgradeModal(true);
+    fetchPlans();
+  };
+
+const handleUpgradeToPlan = async (newPriceId: string) => {
+  try {
+    setUpgradingToPlan(newPriceId);
+
+    const res = await fetch('https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/upgradeSubscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscriptionId: subscription.id,
+        newPriceId,
+        userId: currentUser?.uid,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Upgrade failed');
+    }
+
+    //showAlertMessage('success', 'Plan actualizado correctamente');
+    setShowUpgradeModal(false);
+    //await refetchSubscription(); // tu lógica para actualizar la suscripción en frontend
+  } catch (err) {
+    console.error('Error al actualizar el plan:', err);
+    //showAlertMessage('error', 'No se pudo actualizar el plan');
+  } finally {
+    setUpgradingToPlan(null);
+  }
+};
+
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -230,7 +302,8 @@ export default function ActiveSubscriptionPage() {
 
             <Button
               disabled={redirecting}
-              onClick={() => window.location.href = '/billing'}
+                            onClick={handleUpgradeClick}
+
               className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
             >
               {redirecting ? (
@@ -241,13 +314,225 @@ export default function ActiveSubscriptionPage() {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>Upgrade to Premium</span>
+                  <span>Upgrade subscription</span>
                 </>
               )}
             </Button>
           </CardContent>
         </Card>
       </div>
+
+     <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] flex flex-col">
+          {/* Header compacto y fijo */}
+          <DialogHeader className="text-center space-y-2 pb-4 flex-shrink-0 border-b border-gray-100">
+
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              Upgrade Your Plan
+            </DialogTitle>
+            <p className="text-gray-600 text-sm">
+              Choose a higher plan to unlock more features
+            </p>
+          </DialogHeader>
+
+          {/* Contenido scrolleable */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-6">
+              {plansLoading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="relative mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full animate-pulse"></div>
+                    <Loader2 className="w-6 h-6 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-spin" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">Loading Plans</h3>
+                  <p className="text-gray-600 text-sm">Please wait...</p>
+                </div>
+              ) : plansError ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Crown className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h3>
+                  <p className="text-red-600 mb-4 text-sm">{plansError}</p>
+                  <Button 
+                    onClick={fetchPlans} 
+                    variant="outline"
+                    size="sm"
+                    className="hover:bg-red-50 border-red-200"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Try Again
+                  </Button>
+                </div>
+              ) : plans.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="relative mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto">
+                      <Crown className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    You're Already at the Top! 👑
+                  </h3>
+                  <p className="text-gray-600 max-w-md mx-auto text-sm leading-relaxed">
+                    You're already enjoying our highest tier with all premium features.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Grid de planes más compacto */}
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {plans.map((plan: any) => (
+                      <div key={plan.id} className="relative">
+                        {/* Badge de popular más pequeño */}
+                        {plan.popular && (
+                          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                            <div className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
+                              <Star className="w-3 h-3 mr-1" />
+                              Popular
+                            </div>
+                          </div>
+                        )}
+
+                        <Card className={`
+                          relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1 border-2 h-full
+                          ${plan.popular 
+                            ? 'border-gradient-to-r from-orange-400 to-pink-500 shadow-md' 
+                            : 'border-gray-200 hover:border-indigo-300'
+                          }
+                        `}>
+                          {/* Efecto de gradiente sutil para plan popular */}
+                          {plan.popular && (
+                            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-pink-50 opacity-30"></div>
+                          )}
+                          
+                          <CardHeader className="text-center pb-3 relative z-10">
+                            {/* Icono más pequeño */}
+                            <div className={`
+                              w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center
+                              ${plan.popular 
+                                ? 'bg-gradient-to-br from-orange-400 to-pink-500' 
+                                : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                              }
+                            `}>
+                              <Crown className="w-5 h-5 text-white" />
+                            </div>
+
+                            <CardTitle className="text-lg font-bold text-gray-900 mb-1">
+                              {plan.product?.name || "Premium Plan"}
+                            </CardTitle>
+
+                            {/* Precio más compacto */}
+                            <div className="mb-2">
+                              <div className={`
+                                text-2xl font-bold mb-0
+                                ${plan.popular 
+                                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent' 
+                                  : 'text-indigo-600'
+                                }
+                              `}>
+                                ${((plan.unit_amount || 0) / 100).toFixed(0)}
+                              </div>
+                              <div className="text-gray-600 text-sm">
+                                per {plan.recurring?.interval || "month"}
+                              </div>
+                            </div>
+
+                            {plan.product?.description && (
+                              <p className="text-gray-600 text-xs leading-tight line-clamp-2">
+                                {plan.product.description}
+                              </p>
+                            )}
+                          </CardHeader>
+
+                          <CardContent className="space-y-3 relative z-10 flex-1 flex flex-col justify-between px-4 pb-4">
+                            {/* Features más compactas */}
+                            <div className="space-y-2">
+                              {plan.metadata?.bins && (
+                                <div className="flex items-center text-sm">
+                                  <div className={`
+                                    w-4 h-4 rounded-full flex items-center justify-center mr-2
+                                    ${plan.popular ? 'bg-orange-100' : 'bg-green-100'}
+                                  `}>
+                                    <Package className={`w-3 h-3 ${plan.popular ? 'text-orange-500' : 'text-green-500'}`} />
+                                  </div>
+                                  <span className="font-medium text-gray-800 truncate">
+                                    {plan.metadata.bins} bins
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {plan.metadata?.items && (
+                                <div className="flex items-center text-sm">
+                                  <div className={`
+                                    w-4 h-4 rounded-full flex items-center justify-center mr-2
+                                    ${plan.popular ? 'bg-orange-100' : 'bg-green-100'}
+                                  `}>
+                                    <Zap className={`w-3 h-3 ${plan.popular ? 'text-orange-500' : 'text-green-500'}`} />
+                                  </div>
+                                  <span className="font-medium text-gray-800 truncate">
+                                    {plan.metadata.items} items
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {plan.metadata?.locations && (
+                                <div className="flex items-center text-sm">
+                                  <div className={`
+                                    w-4 h-4 rounded-full flex items-center justify-center mr-2
+                                    ${plan.popular ? 'bg-orange-100' : 'bg-green-100'}
+                                  `}>
+                                    <MapPin className={`w-3 h-3 ${plan.popular ? 'text-orange-500' : 'text-green-500'}`} />
+                                  </div>
+                                  <span className="font-medium text-gray-800 truncate">
+                                    {plan.metadata.locations} locations
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Botón más compacto */}
+                            <Button
+                              onClick={() => handleUpgradeToPlan(plan.id)}
+                              disabled={upgradingToPlan === plan.id}
+                              size="sm"
+                              className={`
+                                w-full font-semibold transition-all duration-200 relative overflow-hidden
+                                ${plan.popular 
+                                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg' 
+                                  : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white hover:shadow-md'
+                                }
+                                ${upgradingToPlan === plan.id ? 'animate-pulse' : ''}
+                              `}
+                            >
+                              {upgradingToPlan === plan.id ? (
+                                <div className="flex items-center justify-center space-x-2">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span className="text-sm">Processing...</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-center space-x-2">
+                                  <Crown className="w-4 h-4" />
+                                  <span className="text-sm">Upgrade Now</span>
+                                </div>
+                              )}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </DialogContent>
+      </Dialog>
+      
     </div>
   );
 }
