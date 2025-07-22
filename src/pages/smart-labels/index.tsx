@@ -1,148 +1,210 @@
-import React, { useState, useEffect } from 'react';
-import { Step1, Step3 } from './components/index';
-import { motion, AnimatePresence } from 'framer-motion';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { TemplatesView } from '../../pages/smart-labels/components/TemplatesView';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Label } from '../../components/ui/label';
+import { Search } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { db } from '../../lib/firebase';
+import { collection, addDoc, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
 
-interface RequestHistory {
-  requestId: string;
-  qrCount: number;
-  date: string;
-}
+type Label = {
+  dateCreated: string;
+  field: string;
+  guid: string;
+  isUsed: boolean;
+  order_key: string;
+  qrcodeId: string;
+};
+
+const generateQrCodeId = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 3; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 export const SmartLabelsPage = () => {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [qrCount, setQrCount] = useState(0);
-  const [requestId, setRequestId] = useState('');
-  const [requestHistory, setRequestHistory] = useState<RequestHistory[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isUsedFilter, setIsUsedFilter] = useState<boolean | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const { currentUser } = useAuth();
-  const [isPrinting, setIsPrinting] = useState(false);
   
   useEffect(() => {
-    const fetchRequestHistory = async () => {
-      if (currentUser?.uid) {
-        const q = query(
-          collection(db, 'smartlabels'),
-          where('userId', '==', currentUser.uid)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        const requests = new Map<string, RequestHistory>();
-        
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          const date = data.dateCreated?.toDate()?.toLocaleDateString() || 'Unknown date';
-          
-          if (data.requestId) {
-            requests.set(data.requestId, {
-              requestId: data.requestId,
-              qrCount: requests.get(data.requestId)?.qrCount ? requests.get(data.requestId)!.qrCount + 1 : 1,
-              date
-            });
-          }
-        });
-        
-        setRequestHistory(Array.from(requests.values()));
-      }
-    };
-    
-    fetchRequestHistory();
-  }, [currentUser?.uid, isGenerating]);
-  
-  const handleGenerate = (requestId: string) => {
-    setRequestId(requestId);
-    setIsGenerating(true);
-  };
-  
-  const handleBack = () => setIsGenerating(false);
-  
-  const navigate = useNavigate();
+    fetchLabels();
+  }, [searchTerm]);
 
-  const handlePrint = async (requestId: string) => {
+  const fetchLabels = async (): Promise<void> => {
     try {
-      setIsPrinting(true);
-      const token = await currentUser?.getIdToken();
-      const response = await fetch('http://localhost:3000/api/export-templates', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      if (!currentUser) return;
+      setIsLoading(true);
+      
+      const labelsRef = collection(db, 'smartlabels');
+      let q;
+      
+      let conditions = [where('userId', '==', currentUser.uid)];
+      
+      if (searchTerm) {
+        const searchTerms = searchTerm.split(',').map(term => term.trim());
+        conditions.push(where('qrcodeId', 'in', searchTerms));
+      }
+      
+      if (isUsedFilter !== null) {
+        conditions.push(where('isUsed', '==', isUsedFilter));
+      }
+      
+      if (startDate && endDate) {
+        conditions.push(where('dateCreated', '>=', startDate));
+        conditions.push(where('dateCreated', '<=', endDate));
+      }
+      
+      q = query(labelsRef, ...conditions);
+      
+      const querySnapshot = await getDocs(q);
+      
+      const labelsData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          dateCreated: data.dateCreated,
+          field: data.field,
+          guid: data.guid || doc.id,
+          isUsed: data.isUsed,
+          order_key: data.order_key,
+          qrcodeId: data.qrcodeId,
+          userId: data.userId
+        } as Label;
       });
       
-      if (!response.ok) throw new Error('Failed to fetch templates');
-      
-      const data = await response.json();
-      console.log('API response data:', data);
-      navigate('/smart-labels/templates', { state: { templates: data, requestId } });
+      setLabels(labelsData);
     } catch (error) {
-      console.error('Print error:', error);
+      console.error('Error fetching labels:', error);
     } finally {
-      setIsPrinting(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateLabel = async (label: Omit<Label, 'guid' | 'dateCreated' | 'isUsed' | 'order_key' | 'qrcodeId'>) => {
+    try {
+      if (!currentUser) return;
+      setIsLoading(true);
+      
+      const batch = writeBatch(db);
+      const now = new Date().toISOString();
+      
+      for (let i = 0; i < quantity; i++) {
+        const guid = self.crypto?.randomUUID() || Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const qrcodeId = generateQrCodeId();
+        
+        const labelData = {
+          dateCreated: now,
+          field: `${label.field} ${quantity > 1 ? `(${i+1})` : ''}`.trim(),
+          guid,
+          isUsed: false,
+          order_key: '',
+          qrcodeId,
+          userId: currentUser.uid
+        };
+        
+        const docRef = doc(collection(db, 'smartlabels'));
+        batch.set(docRef, labelData);
+      }
+      
+      await batch.commit();
+      fetchLabels();
+    } catch (error) {
+      console.error('Error creating labels:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-8">Smart Labels</h1>
-      
-      {!isGenerating && requestHistory.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Previous Requests</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {requestHistory.map((request) => (
-              <div key={request.requestId} className="bg-gray-100 p-4 rounded-lg relative">
-                <button 
-                   onClick={() => handlePrint(request.requestId)}
-                   className="absolute top-2 right-2 p-1 text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                   aria-label="Print request"
-                   disabled={isPrinting}
-                 >
-                   {isPrinting ? (
-                      <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                   </svg>
-                    )}
-                </button>
-                <h3 className="font-medium text-lg mb-2">Request {request.requestId.slice(0, 8)}</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-sm text-gray-500">QR Codes</p>
-                    <p className="font-medium">{request.qrCount}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Date Generated</p>
-                    <p className="font-medium">{request.date}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <div className="container mx-auto p-4">
+      <div className="space-y-4 mb-6">
+        <h1 className="text-2xl font-bold">Smart Labels</h1>
+        <div className="w-full space-y-2">
+          <Label htmlFor="search">Search by QR Code IDs</Label>
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="search"
+              placeholder="Comma separated QR Code IDs"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button 
+            onClick={() => setShowQuantityModal(true)}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Creating...' : 'Create Label'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {labels.map((label) => (
+          <div key={label.guid} className="p-4 border rounded-lg hover:bg-gray-50">
+            <div className="font-medium">QR Code: {label.qrcodeId}</div>
+            <div className="text-sm text-gray-500">Field: {label.field}</div>
+            <div className="text-xs text-gray-400 mt-1">
+              Created: {new Date(label.dateCreated).toLocaleString()}
+            </div>
+            <div className="text-xs mt-2">
+              <span className="inline-block px-2 py-1 rounded bg-gray-100">
+                {label.isUsed ? 'Used' : 'Available'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showQuantityModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg">
+            <h2 className="text-xl font-bold mb-4">Create Labels</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                Number of labels to create:
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowQuantityModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowQuantityModal(false);
+                  handleCreateLabel({ field: `New Label ${quantity > 1 ? '(x' + quantity + ')' : ''}` });
+                }}
+              >
+                Create
+              </Button>
+            </div>
           </div>
         </div>
       )}
-      
-      <AnimatePresence mode="wait">
-        {!isGenerating ? (
-          <Step1 
-            qrCount={qrCount} 
-            setQrCount={setQrCount} 
-            onGenerate={handleGenerate} 
-          />
-        ) : (
-          <Step3 
-            qrCount={qrCount} 
-            onBack={handleBack}
-            requestId={requestId}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
