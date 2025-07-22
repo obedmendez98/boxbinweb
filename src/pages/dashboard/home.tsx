@@ -479,6 +479,22 @@ export default function HomeScreen() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 relative">
+      {/* Impersonation Header */}
+      {userImpersonated && (
+        <div className="bg-gray-50 border-b border-gray-200">
+          <div className="container mx-auto px-6 py-2 max-w-7xl flex items-center justify-end space-x-4">
+            <span className="text-sm text-gray-500">
+              {t('dashboard.by')} <strong>{userImpersonated?.ownerUsername}</strong>
+            </span>
+            <button
+              onClick={clearImpersonation}
+              className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors duration-200"
+            >
+              {t('dashboard.stopImpersonation')}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Header con estadísticas */}
         <div className="mb-10">
@@ -489,19 +505,6 @@ export default function HomeScreen() {
               </h1>
               <p className="text-gray-600">{t('dashboard.subtitle')}</p>
             </div>
-            {userImpersonated && (
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-500">
-                  {t('dashboard.by')} <strong>{userImpersonated?.ownerUsername}</strong>
-                </span>
-                <button
-                  onClick={clearImpersonation}
-                  className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200"
-                >
-                  {t('dashboard.stopImpersonation')}
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Stats cards */}
