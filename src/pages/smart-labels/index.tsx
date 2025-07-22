@@ -148,27 +148,7 @@ export const SmartLabelsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-end mb-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-          className="gap-2"
-        >
-          {viewMode === 'grid' ? (
-            <>
-              <List className="h-4 w-4" />
-              List View
-            </>
-          ) : (
-            <>
-              <Grid className="h-4 w-4" />
-              Grid View
-            </>
-          )}
-        </Button>
-      </div>
-
+  
       <div className="space-y-4 mb-6">
         <h1 className="text-2xl font-bold">Smart Labels</h1>
 
@@ -235,6 +215,26 @@ export const SmartLabelsPage = () => {
               disabled={isLoading}
             >
               {isLoading ? 'Creating...' : 'Create Label'}
+            </Button>
+          </div>
+          <div className='flex justify-end'>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="gap-2"
+            >
+              {viewMode === 'grid' ? (
+                <>
+                  <List className="h-4 w-4" />
+                  List View
+                </>
+              ) : (
+                <>
+                  <Grid className="h-4 w-4" />
+                  Grid View
+                </>
+              )}
             </Button>
           </div>
         </div>
