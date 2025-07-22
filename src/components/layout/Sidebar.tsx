@@ -47,8 +47,8 @@ export function Sidebar({ className }: SidebarProps) {
       //badge: t('sidebar.new'),
     },
     {
-      title: "Impersonate",
-      href: "/impersonate",
+      title: "Shared Access",
+      href: "/shared",
       icon: PersonStandingIcon,
       badge: t('sidebar.new'),
     },

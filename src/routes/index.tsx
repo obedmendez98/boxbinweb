@@ -115,7 +115,7 @@ const router = createBrowserRouter([
     },
 
     {
-        path: '/impersonate',
+        path: '/shared',
         element: (
             <ProtectedRoute>
                 <SocialScreen />
