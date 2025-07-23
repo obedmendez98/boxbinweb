@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useNavigate } from 'react-router-dom';
+import { Checkbox } from '../../components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Grid, List, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -49,7 +50,9 @@ export const SmartLabelsPage = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [showTemplateButton, setShowTemplateButton] = useState(false);
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (currentUser) {
@@ -180,7 +183,24 @@ export const SmartLabelsPage = () => {
     <div className="container mx-auto p-4">
   
       <div className="space-y-4 mb-6">
-        <h1 className="text-2xl font-bold">Smart Labels</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Smart Labels</h1>
+          {selectedLabels.length > 0 && (
+            <Button 
+            variant="default" 
+            onClick={() => {
+              navigate('/smart-labels/templates', {
+                state: {
+                  selectedQRCodes: selectedLabels
+                }
+              });
+            }}
+            className="ml-4"
+          >
+            Generate Template
+          </Button>
+          )}
+        </div>
 
         <div className="w-full space-y-4">
           <div className="space-y-2">
