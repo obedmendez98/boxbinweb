@@ -46,6 +46,7 @@ export const SmartLabelsPage = () => {
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchTags, setSearchTags] = useState<string[]>([]);
   const [isUsedFilter, setIsUsedFilter] = useState<boolean | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -63,16 +64,19 @@ export const SmartLabelsPage = () => {
   useEffect(() => {
     let filtered = [...allLabels];
 
-    if (searchTerm) {
-      const searchTerms = searchTerm
+    // Combine search term and tags for filtering
+    const allSearchTerms = [
+      ...searchTerm
         .split(',')
         .map((term) => term.trim().toUpperCase())
-        .filter(Boolean);
-      if (searchTerms.length > 0) {
-        filtered = filtered.filter((label) =>
-          searchTerms.includes(label.qrcodeId.toUpperCase())
-        );
-      }
+        .filter(Boolean),
+      ...searchTags.map(tag => tag.toUpperCase())
+    ];
+
+    if (allSearchTerms.length > 0) {
+      filtered = filtered.filter((label) =>
+        allSearchTerms.includes(label.qrcodeId.toUpperCase())
+      );
     }
 
     if (isUsedFilter !== null) {
@@ -204,14 +208,65 @@ export const SmartLabelsPage = () => {
 
         <div className="w-full space-y-4">
           <div className="space-y-2">
+            <div className="flex flex-col gap-2">
             <Label htmlFor="search">Search by QR Code IDs</Label>
+            {searchTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {searchTags.map((tag, index) => (
+                  <div key={index} className="flex items-center bg-gray-100 rounded-full px-3 py-1">
+                    <span>{tag}</span>
+                    <button 
+                      type="button" 
+                      className="ml-2 text-gray-500 hover:text-gray-700"
+                      onClick={() => {
+   const newTags = searchTags.filter((_, i) => i !== index);
+   setSearchTags(newTags);
+   
+   // Reuse the existing filtering logic from useEffect
+   const allSearchTerms = [
+     ...searchTerm
+       .split(',')
+       .map((term) => term.trim().toUpperCase())
+       .filter(Boolean),
+     ...newTags.map(tag => tag.toUpperCase())
+   ];
+   
+   let filtered = [...allLabels];
+   if (allSearchTerms.length > 0) {
+     filtered = filtered.filter((label) =>
+       allSearchTerms.includes(label.qrcodeId.toUpperCase())
+     );
+   }
+   setLabels(filtered);
+ }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="search"
                 placeholder="Comma separated QR Code IDs"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearchTerm(value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                  e.preventDefault();
+                  const value = searchTerm.trim();
+                  if (value) {
+                    setSearchTags([...searchTags, value]);
+                    setSearchTerm('');
+                  }
+                }
+              }}
                 className="pl-10 w-full"
               />
             </div>
