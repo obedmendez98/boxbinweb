@@ -407,7 +407,6 @@ const BinDetailsScreen: React.FC = () => {
     }
   };
 
-
   const handleUpdateBin = async () => {
     // aquí va tu lógica de update en Firestore…
   }

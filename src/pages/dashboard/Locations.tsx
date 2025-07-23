@@ -88,10 +88,13 @@ export const LocationsManager = () => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
   const [totalLocations, setTotalLocations] = useState(0);
-  //const [lastVisible, setLastVisible] = useState<any>(null);
-  //const [firstVisible, setFirstVisible] = useState<any>(null);
 
+   // Auth & impersonation
   const { currentUser } = useAuth();
+  const [userImpersonated, setUserImpersonated] = useState<any>(
+    () => JSON.parse(localStorage.getItem('impersonatedUser') || 'null')
+  );
+  const effectiveUserId = userImpersonated?.ownerUserId || currentUser?.uid;
 
   // Estados para navegación de páginas
   const [pageSnapshots, setPageSnapshots] = useState(new Map());
@@ -106,7 +109,7 @@ export const LocationsManager = () => {
     try {
       const q = query(
         collection(db, "subscriptions"),
-        where("userId", "==", currentUser.uid)
+        where("userId", "==", effectiveUserId)
       );
       const querySnapshot = await getDocs(q);
 
@@ -139,6 +142,11 @@ export const LocationsManager = () => {
     }
   };
 
+  const clearImpersonation = () => {
+    localStorage.removeItem('impersonatedUser');
+    setUserImpersonated(null);
+  };
+
   // Función para mostrar alertas
   const showAlertMessage = (type: any, message: any) => {
     setShowAlert({ show: true, type, message });
@@ -157,7 +165,7 @@ export const LocationsManager = () => {
 
       const q = query(
         collection(db, "locations"),
-        where("userId", "==", currentUser.uid)
+        where("userId", "==", effectiveUserId)
       );
       const snapshot = await getDocs(q);
       setTotalLocations(snapshot.size);
@@ -178,7 +186,7 @@ export const LocationsManager = () => {
 
       // Construir query base
       const baseQuery = [
-        where("userId", "==", currentUser.uid),
+        where("userId", "==", effectiveUserId),
         orderBy(sortBy, sortOrder === "asc" ? "asc" : "desc"),
         limit(itemsPerPage + 1), // +1 para determinar si hay siguiente página
       ];
@@ -266,7 +274,7 @@ export const LocationsManager = () => {
         address: itemAddress.trim(),
         description: itemDescription.trim(),
         createdAt: serverTimestamp(),
-        userId: currentUser.uid,
+        userId: effectiveUserId,
       };
 
       await addDoc(collection(db, "locations"), data);
@@ -416,7 +424,7 @@ export const LocationsManager = () => {
       // Listener en tiempo real para cambios en la colección
       const q = query(
         collection(db, "locations"),
-        where("userId", "==", currentUser.uid)
+        where("userId", "==", effectiveUserId)
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -471,6 +479,22 @@ export const LocationsManager = () => {
         </Alert>
       )}
 
+      {/* Impersonation Header */}
+      {userImpersonated && (
+        <div className="bg-gray-50 border-b border-gray-200">
+          <div className="container mx-auto px-6 py-2 max-w-7xl flex items-center justify-end space-x-4">
+            <span className="text-sm text-gray-500">
+              {t('dashboard.by')} <strong>{userImpersonated?.ownerUsername}</strong>
+            </span>
+            <button
+              onClick={clearImpersonation}
+              className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors duration-200"
+            >
+              {t('dashboard.stopImpersonation')}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">

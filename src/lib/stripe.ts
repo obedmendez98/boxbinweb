@@ -97,7 +97,7 @@ export const createStripeSubscription = async (
     } else {
       // Create customer first
       customer = await stripeClient.customers.create({
-        email: userEmail,
+        email: userEmail || undefined,
         name: billingDetails?.nameOnCard || userName,
         metadata: {
           userId: userId || '',
@@ -128,12 +128,23 @@ export const createStripeSubscription = async (
       }
     }
 
+    /*const subscription = await stripeClient.subscriptions.create({
+      customer: customer.id,
+      items: [{ price: planId }],
+      expand: ['latest_invoice.payment_intent'],
+      default_payment_method: paymentMethodId,
+    });*/
+
+    const trialDays = planId === 'price_1RmGukFRvBExIzdOuM8cy2uE' ? 30 : 0;
+
     const subscription = await stripeClient.subscriptions.create({
       customer: customer.id,
       items: [{ price: planId }],
       expand: ['latest_invoice.payment_intent'],
       default_payment_method: paymentMethodId,
+      trial_period_days: trialDays > 0 ? trialDays : undefined,
     });
+
 
     return {
       status: subscription.status,
@@ -146,7 +157,6 @@ export const createStripeSubscription = async (
     throw error;
   }
 };
-
 
 export const getStripePlanById = async (priceId: string): Promise<any> => {
   try {

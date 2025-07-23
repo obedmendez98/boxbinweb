@@ -296,6 +296,12 @@ export default function BillingPage() {
 
                         {/* Aquí van los features */}
                         <div className="mb-4 space-y-1 text-sm text-gray-700 flex-1">
+                          {/* Trial period display */}
+                          {plan.metadata?.trial === 'true' && (
+                            <p className="text-green-600 font-semibold mb-2">
+                              🎉 30-day free trial included
+                            </p>
+                          )}
                           {plan.metadata?.bins && (
                             <p>
                               📦 Bins:{" "}
