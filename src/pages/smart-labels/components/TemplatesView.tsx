@@ -46,7 +46,7 @@ export const TemplatesView = () => {
       setLoading(true);
       try {
         const token = await currentUser?.getIdToken();
-        const response = await fetch('http://localhost:3000/api/export-templates', {
+        const response = await fetch('https://boxbinapi-iv6wi.ondigitalocean.app/api/export-templates', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -61,7 +61,7 @@ export const TemplatesView = () => {
             labelsPerPage: template.labelsPerPage,
             gridLayout: template.gridLayout,
             dimensions: template.dimensions,
-            previewUrl: `http://localhost:3000/templates/${template.id}/preview`,
+            previewUrl: `https://boxbinapi-iv6wi.ondigitalocean.app/api/templates/${template.id}/preview`,
           }))
         );
       } catch (error) {
@@ -169,7 +169,7 @@ export const TemplatesView = () => {
                   onClick={async () => {
                     try {
                       const token = await currentUser?.getIdToken();
-                      const response = await fetch('http://localhost:3000/api/generate-template', {
+                      const response = await fetch('https://boxbinapi-iv6wi.ondigitalocean.app/api/generate-template', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
