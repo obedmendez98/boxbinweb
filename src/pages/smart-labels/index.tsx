@@ -211,41 +211,56 @@ export const SmartLabelsPage = () => {
             <div className="flex flex-col gap-2">
             <Label htmlFor="search">Search by QR Code IDs</Label>
             {searchTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {searchTags.map((tag, index) => (
-                  <div key={index} className="flex items-center bg-gray-100 rounded-full px-3 py-1">
-                    <span>{tag}</span>
-                    <button 
-                      type="button" 
-                      className="ml-2 text-gray-500 hover:text-gray-700"
-                      onClick={() => {
-   const newTags = searchTags.filter((_, i) => i !== index);
-   setSearchTags(newTags);
-   
-   // Reuse the existing filtering logic from useEffect
-   const allSearchTerms = [
-     ...searchTerm
-       .split(',')
-       .map((term) => term.trim().toUpperCase())
-       .filter(Boolean),
-     ...newTags.map(tag => tag.toUpperCase())
-   ];
-   
-   let filtered = [...allLabels];
-   if (allSearchTerms.length > 0) {
-     filtered = filtered.filter((label) =>
-       allSearchTerms.includes(label.qrcodeId.toUpperCase())
-     );
-   }
-   setLabels(filtered);
- }}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {searchTags.map((tag, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md"
                     >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newTags = searchTags.filter((_, i) => i !== index);
+                          setSearchTags(newTags);
+                          
+                          // Combine all search terms (from input and tags)
+                          const allSearchTerms = [
+                            ...(searchTerm ? [searchTerm] : []),
+                            ...newTags
+                          ].filter(Boolean);
+                          
+                          setLabels(
+                            allLabels.filter((label) => {
+                              return allSearchTerms.length === 0 
+                                ? true 
+                                : allSearchTerms.some(term => label.qrcodeId.includes(term));
+                            })
+                          );
+                          
+                          // Preserve search term if it exists
+                          if (searchTerm) {
+                            setSearchTerm(searchTerm);
+                          }
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTags([]);
+                      setLabels(allLabels);
+                    }}
+                    className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
           </div>
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
