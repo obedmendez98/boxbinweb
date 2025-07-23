@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Grid, List, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +39,7 @@ const generateQrCodeId = () => {
 
 export const SmartLabelsPage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [allLabels, setAllLabels] = useState<LabelType[]>([]);
   const [labels, setLabels] = useState<LabelType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showQuantityModal, setShowQuantityModal] = useState(false);
@@ -46,11 +48,58 @@ export const SmartLabelsPage = () => {
   const [isUsedFilter, setIsUsedFilter] = useState<boolean | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    fetchLabels();
-  }, [searchTerm, startDate, endDate]);
+    if (currentUser) {
+      fetchLabels();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    let filtered = [...allLabels];
+
+    if (searchTerm) {
+      const searchTerms = searchTerm
+        .split(',')
+        .map((term) => term.trim().toUpperCase())
+        .filter(Boolean);
+      if (searchTerms.length > 0) {
+        filtered = filtered.filter((label) =>
+          searchTerms.includes(label.qrcodeId.toUpperCase())
+        );
+      }
+    }
+
+    if (isUsedFilter !== null) {
+      filtered = filtered.filter((label) => label.isUsed === isUsedFilter);
+    }
+
+    if (startDate) {
+      filtered = filtered.filter(
+        (label) => new Date(label.dateCreated) >= startDate
+      );
+    }
+    if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(
+        (label) => new Date(label.dateCreated) <= endOfDay
+      );
+    }
+
+    const selectedData = allLabels.filter((l) =>
+      selectedLabels.includes(l.guid)
+    );
+
+    const combined = [...selectedData, ...filtered];
+    const finalLabels = combined.filter(
+      (v, i, a) => a.findIndex((t) => t.guid === v.guid) === i
+    );
+
+    setLabels(finalLabels);
+  }, [searchTerm, startDate, endDate, isUsedFilter, selectedLabels, allLabels]);
 
   const fetchLabels = async (): Promise<void> => {
     try {
@@ -58,34 +107,7 @@ export const SmartLabelsPage = () => {
       setIsLoading(true);
 
       const labelsRef = collection(db, 'smartlabels');
-      const conditions = [where('userId', '==', currentUser.uid)];
-
-      if (searchTerm) {
-        const searchTerms = searchTerm
-          .split(',')
-          .map((term) => term.trim().toUpperCase())
-          .filter(Boolean);
-
-        if (searchTerms.length > 10) {
-          console.warn('Limiting QR search to first 10 items.');
-          searchTerms.length = 10;
-        }
-
-        if (searchTerms.length > 0) {
-          conditions.push(where('qrcodeId', 'in', searchTerms));
-        }
-      }
-
-      if (isUsedFilter !== null) {
-        conditions.push(where('isUsed', '==', isUsedFilter));
-      }
-
-      if (startDate && endDate) {
-        conditions.push(where('dateCreated', '>=', startDate.toISOString()));
-        conditions.push(where('dateCreated', '<=', endDate.toISOString()));
-      }
-
-      const q = query(labelsRef, ...conditions);
+      const q = query(labelsRef, where('userId', '==', currentUser.uid));
       const querySnapshot = await getDocs(q);
 
       const labelsData = querySnapshot.docs.map((doc) => {
@@ -101,12 +123,20 @@ export const SmartLabelsPage = () => {
         } as LabelType;
       });
 
-      setLabels(labelsData);
+      setAllLabels(labelsData);
     } catch (error) {
       console.error('Error fetching labels:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLabelSelect = (guid: string) => {
+    setSelectedLabels((prevSelected) =>
+      prevSelected.includes(guid)
+        ? prevSelected.filter((id) => id !== guid)
+        : [...prevSelected, guid]
+    );
   };
 
   const handleCreateLabel = async (label: { field: string }) => {
@@ -174,8 +204,8 @@ export const SmartLabelsPage = () => {
                 selected={startDate}
                 onChange={(date: Date | null) => setStartDate(date)}
                 selectsStart
-                startDate={startDate}
-                endDate={endDate}
+                startDate={startDate || undefined}
+                endDate={endDate || undefined}
                 className="border rounded px-3 py-2"
                 placeholderText="Select start date"
                 maxDate={new Date()}
@@ -187,11 +217,11 @@ export const SmartLabelsPage = () => {
                 selected={endDate}
                 onChange={(date: Date | null) => setEndDate(date)}
                 selectsEnd
-                startDate={startDate}
-                endDate={endDate}
+                startDate={startDate || undefined}
+                endDate={endDate || undefined}
                 className="border rounded px-3 py-2"
                 placeholderText="Select end date"
-                minDate={startDate}
+                minDate={startDate || undefined}
                 maxDate={new Date()}
               />
             </div>
@@ -248,9 +278,14 @@ export const SmartLabelsPage = () => {
             labels.map((label) => (
               <div
                 key={label.guid}
-                className="p-4 border rounded-lg hover:bg-gray-50"
+                className="p-4 border rounded-lg hover:bg-gray-50 flex items-center space-x-4"
               >
-                <div className="font-medium">QR Code: {label.qrcodeId}</div>
+                <Checkbox
+                  checked={selectedLabels.includes(label.guid)}
+                  onCheckedChange={() => handleLabelSelect(label.guid)}
+                />
+                <div>
+                  <div className="font-medium">QR Code: {label.qrcodeId}</div>
                 <div className="text-sm text-gray-500">Field: {label.field}</div>
                 <div className="text-xs text-gray-400 mt-1">
                   Created: {new Date(label.dateCreated).toLocaleString()}
@@ -259,6 +294,7 @@ export const SmartLabelsPage = () => {
                   <span className="inline-block px-2 py-1 rounded bg-gray-100">
                     {label.isUsed ? 'Used' : 'Available'}
                   </span>
+                </div>
                 </div>
               </div>
             ))
@@ -272,6 +308,13 @@ export const SmartLabelsPage = () => {
             labels.map((label) => (
               <Card key={label.guid} className="hover:shadow-md transition-all">
                 <CardContent className="p-4">
+                  <div className="flex items-start space-x-4">
+                    <Checkbox
+                      checked={selectedLabels.includes(label.guid)}
+                      onCheckedChange={() => handleLabelSelect(label.guid)}
+                      className="mt-1"
+                    />
+                    <div>
                   <div className="font-medium">QR Code: {label.qrcodeId}</div>
                   <div className="text-sm text-gray-500">Field: {label.field}</div>
                   <div className="text-xs text-gray-400 mt-1">
@@ -282,6 +325,8 @@ export const SmartLabelsPage = () => {
                       {label.isUsed ? 'Used' : 'Available'}
                     </span>
                   </div>
+                 </div>
+                </div>
                 </CardContent>
               </Card>
             ))
