@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Search, 
-  Package, 
-  MapPin, 
-  X, 
-  ChevronLeft, 
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Package,
+  MapPin,
+  X,
+  ChevronLeft,
   ChevronRight,
   Grid,
   List,
@@ -19,13 +19,24 @@ import {
   Building2,
   Plus,
   TrendingUp,
-  Filter
-} from 'lucide-react';
-import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
-import { db } from '@/lib/firebase';
-import { useAuth } from '@/context/AuthContext';
-import { useTranslation } from 'react-i18next';
+  Filter,
+} from "lucide-react";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  getDocs,
+  addDoc,
+} from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
+import { AddBinModal, type BinData } from "@/components/layout/AddBin";
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -67,47 +78,49 @@ interface PaginationState {
 }
 
 export default function HomeScreen() {
-
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   // Auth & impersonation
   const { currentUser } = useAuth();
-  const [userImpersonated, setUserImpersonated] = useState<any>(
-    () => JSON.parse(localStorage.getItem('impersonatedUser') || 'null')
+  const [userImpersonated, setUserImpersonated] = useState<any>(() =>
+    JSON.parse(localStorage.getItem("impersonatedUser") || "null")
   );
   const effectiveUserId = userImpersonated?.ownerUserId || currentUser?.uid;
 
   // UI state
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'bins' | 'locations' | any>('bins');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState<"bins" | "locations" | any>(
+    "bins"
+  );
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Bins state
   //const [bins, setBins] = useState<Bin[]>([]);
   const [filteredBins, setFilteredBins] = useState<Bin[]>([]);
-  const [searchTextBins, setSearchTextBins] = useState('');
+  const [searchTextBins, setSearchTextBins] = useState("");
   const [binsPagination, setBinsPagination] = useState<PaginationState>({
     currentPage: 1,
     hasNextPage: false,
     hasPreviousPage: false,
     lastVisible: null,
     firstVisible: null,
-    totalCount: 0
+    totalCount: 0,
   });
 
   // Locations state
   //const [locations, setLocations] = useState<Location[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
-  const [searchTextLocations, setSearchTextLocations] = useState('');
-  const [locationsPagination, setLocationsPagination] = useState<PaginationState>({
-    currentPage: 1,
-    hasNextPage: false,
-    hasPreviousPage: false,
-    lastVisible: null,
-    firstVisible: null,
-    totalCount: 0
-  });
+  const [searchTextLocations, setSearchTextLocations] = useState("");
+  const [locationsPagination, setLocationsPagination] =
+    useState<PaginationState>({
+      currentPage: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      lastVisible: null,
+      firstVisible: null,
+      totalCount: 0,
+    });
 
   // Filter state
   const [filterLocation, setFilterLocation] = useState<Location | null>(null);
@@ -117,94 +130,98 @@ export default function HomeScreen() {
     totalBins: 0,
     totalLocations: 0,
     totalItems: 0,
-    recentActivity: 0
+    recentActivity: 0,
   });
 
   const normalizeText = (text: any) =>
-    (text || '')
+    (text || "")
       .toString()
       .trim()
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[̀-\u036f]/g, '');
+      .normalize("NFD")
+      .replace(/[̀-\u036f]/g, "");
 
   // --- FETCH FUNCTIONS using effectiveUserId ---
   const fetchBins = async (
     page: number = 1,
-    searchTerm: string = '',
+    searchTerm: string = "",
     isNextPage: boolean = false,
     filterLocation: Location | null = null
   ) => {
     if (!effectiveUserId) return;
     setLoading(true);
-  
+
     try {
       let binsQuery = query(
-        collection(db, 'bins'),
-        where('userId', '==', effectiveUserId),
-        orderBy('createdAt', 'desc'),
+        collection(db, "bins"),
+        where("userId", "==", effectiveUserId),
+        orderBy("createdAt", "desc"),
         limit(ITEMS_PER_PAGE)
       );
-  
+
       if (isNextPage && binsPagination.lastVisible) {
         binsQuery = query(binsQuery, startAfter(binsPagination.lastVisible));
       }
-  
+
       const snapshot = await getDocs(binsQuery);
-      const binsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Bin));
-  
+      const binsData = snapshot.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          } as Bin)
+      );
+
       const binsWithQRCodes = await Promise.all(
-        binsData.map(async bin => {
+        binsData.map(async (bin) => {
           if (!bin.qrGuid) return bin;
           const qrSnap = await getDocs(
-            query(collection(db, 'qrcodes'), where('guid', '==', bin.qrGuid))
+            query(collection(db, "qrcodes"), where("guid", "==", bin.qrGuid))
           );
           return qrSnap.empty
             ? bin
             : { ...bin, qrcodeId: qrSnap.docs[0].data().qrcodeId };
         })
       );
-  
+
       //setBins(binsWithQRCodes);
-  
+
       const normalizedSearch = normalizeText(searchTerm);
-  
-      const filtered = binsWithQRCodes.filter(bin => {
+
+      const filtered = binsWithQRCodes.filter((bin) => {
         const matchesSearch = searchTerm
-          ? [bin.name, bin.description, bin.qrcodeId]
-              .some(field => normalizeText(field).includes(normalizedSearch))
+          ? [bin.name, bin.description, bin.qrcodeId].some((field) =>
+              normalizeText(field).includes(normalizedSearch)
+            )
           : true;
-  
+
         const matchesLocation = filterLocation
           ? bin.location?.id === filterLocation.id
           : true;
-  
+
         return matchesSearch && matchesLocation;
       });
-  
+
       setFilteredBins(filtered);
-  
+
       setBinsPagination({
         currentPage: page,
         hasNextPage: snapshot.docs.length === ITEMS_PER_PAGE,
         hasPreviousPage: page > 1,
         lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
         firstVisible: snapshot.docs[0] || null,
-        totalCount: filtered.length
+        totalCount: filtered.length,
       });
     } catch (error) {
-      console.error('Error fetching bins:', error);
+      console.error("Error fetching bins:", error);
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   const fetchLocations = async (
     page: number = 1,
-    searchTerm: string = '',
+    searchTerm: string = "",
     isNextPage: boolean = false
   ) => {
     if (!effectiveUserId) return;
@@ -212,9 +229,9 @@ export default function HomeScreen() {
 
     try {
       let locQuery = query(
-        collection(db, 'locations'),
-        where('userId', '==', effectiveUserId),
-        orderBy('createdAt', 'desc'),
+        collection(db, "locations"),
+        where("userId", "==", effectiveUserId),
+        orderBy("createdAt", "desc"),
         limit(ITEMS_PER_PAGE)
       );
 
@@ -223,11 +240,15 @@ export default function HomeScreen() {
       }
 
       const snapshot = await getDocs(locQuery);
-      const locData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Location));
+      const locData = snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() } as Location)
+      );
 
       //setLocations(locData);
       const filtered = searchTerm
-        ? locData.filter(loc => normalizeText(loc.name).includes(normalizeText(searchTerm)))
+        ? locData.filter((loc) =>
+            normalizeText(loc.name).includes(normalizeText(searchTerm))
+          )
         : locData;
       setFilteredLocations(filtered);
 
@@ -237,10 +258,10 @@ export default function HomeScreen() {
         hasPreviousPage: page > 1,
         lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
         firstVisible: snapshot.docs[0] || null,
-        totalCount: filtered.length
+        totalCount: filtered.length,
       });
     } catch (error) {
-      console.error('Error fetching locations:', error);
+      console.error("Error fetching locations:", error);
     } finally {
       setLoading(false);
     }
@@ -251,57 +272,67 @@ export default function HomeScreen() {
 
     try {
       const [binsSnap, itemsSnap, locSnap] = await Promise.all([
-        getDocs(query(collection(db, 'bins'), where('userId', '==', effectiveUserId))),
-        getDocs(query(collection(db, 'items'), where('userId', '==', effectiveUserId))),
-        getDocs(query(collection(db, 'locations'), where('userId', '==', effectiveUserId)))
+        getDocs(
+          query(collection(db, "bins"), where("userId", "==", effectiveUserId))
+        ),
+        getDocs(
+          query(collection(db, "items"), where("userId", "==", effectiveUserId))
+        ),
+        getDocs(
+          query(
+            collection(db, "locations"),
+            where("userId", "==", effectiveUserId)
+          )
+        ),
       ]);
 
       setStats({
         totalBins: binsSnap.size,
         totalItems: itemsSnap.size,
         totalLocations: locSnap.size,
-        recentActivity: 0
+        recentActivity: 0,
       });
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
 
   // --- EFFECTS ---
   // Initial and impersonation reload
   useEffect(() => {
-    if (activeTab === 'bins') {
+    if (activeTab === "bins") {
       fetchBins(1, searchTextBins, false, filterLocation); // importante
     } else {
       fetchLocations();
     }
     fetchStats();
-  }, [activeTab, effectiveUserId, filterLocation]);  
+  }, [activeTab, effectiveUserId, filterLocation]);
 
   // Search effects
   useEffect(() => {
-    if (activeTab === 'bins') {
+    if (activeTab === "bins") {
       const timer = setTimeout(() => {
         fetchBins(1, searchTextBins, false, filterLocation);
       }, 300);
       return () => clearTimeout(timer);
     }
   }, [searchTextBins, activeTab, effectiveUserId, filterLocation]);
-  
 
   useEffect(() => {
-    if (activeTab === 'locations') {
-      const timer = setTimeout(() => fetchLocations(1, searchTextLocations), 300);
+    if (activeTab === "locations") {
+      const timer = setTimeout(
+        () => fetchLocations(1, searchTextLocations),
+        300
+      );
       return () => clearTimeout(timer);
     }
   }, [searchTextLocations, activeTab, effectiveUserId]);
 
   const handleLocationFilter = (location: Location) => {
-    setActiveTab('bins');
+    setActiveTab("bins");
     setFilterLocation(location); // guarda la location seleccionada
     fetchBins(1, searchTextBins, false, location); // aplica el filtro
   };
-  
 
   const clearLocationFilter = () => {
     setFilterLocation(null);
@@ -309,13 +340,13 @@ export default function HomeScreen() {
   };
 
   const clearImpersonation = () => {
-    localStorage.removeItem('impersonatedUser');
+    localStorage.removeItem("impersonatedUser");
     setUserImpersonated(null);
   };
 
   const renderBinCard = (bin: any) => (
-    <Card 
-      key={bin.id} 
+    <Card
+      key={bin.id}
       className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white/70 backdrop-blur-sm hover:bg-white hover:-translate-y-1"
       onClick={() => navigate(`/bin-details/${bin.id}`)}
     >
@@ -323,7 +354,10 @@ export default function HomeScreen() {
         {/* Header con QR Code */}
         <div className="flex items-start justify-between mb-4">
           {bin.qrcodeId && (
-            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200 font-medium">
+            <Badge
+              variant="secondary"
+              className="bg-emerald-100 text-emerald-700 border-emerald-200 font-medium"
+            >
               <ScanLine className="w-3 h-3 mr-1" />
               {bin.qrcodeId}
             </Badge>
@@ -338,9 +372,13 @@ export default function HomeScreen() {
 
         {/* Contenido principal */}
         <div className="text-center mb-4">
-          <h3 className="font-semibold text-slate-900 mb-2 truncate">{bin.name}</h3>
+          <h3 className="font-semibold text-slate-900 mb-2 truncate">
+            {bin.name}
+          </h3>
           {bin.description && (
-            <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">{bin.description}</p>
+            <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+              {bin.description}
+            </p>
           )}
         </div>
 
@@ -360,8 +398,8 @@ export default function HomeScreen() {
   );
 
   const renderLocationCard = (location: any) => (
-    <Card 
-      key={location.id} 
+    <Card
+      key={location.id}
       className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white/70 backdrop-blur-sm hover:bg-white hover:-translate-y-1"
       onClick={() => handleLocationFilter(location)}
     >
@@ -375,7 +413,7 @@ export default function HomeScreen() {
 
         {/* Icono principal */}
         <div className="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center group-hover:from-blue-200 group-hover:to-blue-300 transition-all duration-300">
-          {location.type === 'warehouse' ? (
+          {location.type === "warehouse" ? (
             <Building2 className="w-7 h-7 text-blue-600 transition-colors" />
           ) : (
             <MapPin className="w-7 h-7 text-blue-600 transition-colors" />
@@ -391,11 +429,15 @@ export default function HomeScreen() {
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
           <div className="text-center">
-            <div className="text-lg font-semibold text-slate-900">{location.binCount}</div>
+            <div className="text-lg font-semibold text-slate-900">
+              {location.binCount}
+            </div>
             <div className="text-xs text-slate-500">Bins</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-semibold text-slate-900">{location.itemCount}</div>
+            <div className="text-lg font-semibold text-slate-900">
+              {location.itemCount}
+            </div>
             <div className="text-xs text-slate-500">Items</div>
           </div>
         </div>
@@ -404,23 +446,31 @@ export default function HomeScreen() {
   );
 
   const renderListView = (items: any, type: any) => {
-    return(
+    return (
       <div className="space-y-3">
         {items.map((item: any) => (
-          <Card 
+          <Card
             key={item.id}
             className="hover:shadow-md transition-all duration-200 cursor-pointer border-0 bg-white/70 backdrop-blur-sm hover:bg-white"
-            onClick={() => navigate(type === 'bin' ? `/bin-details/${item.id}` : `/location-details/${item.id}`)}
+            onClick={() =>
+              navigate(
+                type === "bin"
+                  ? `/bin-details/${item.id}`
+                  : `/location-details/${item.id}`
+              )
+            }
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    type === 'bin' 
-                      ? 'bg-gradient-to-br from-slate-100 to-slate-200' 
-                      : 'bg-gradient-to-br from-blue-100 to-blue-200'
-                  }`}>
-                    {type === 'bin' ? (
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      type === "bin"
+                        ? "bg-gradient-to-br from-slate-100 to-slate-200"
+                        : "bg-gradient-to-br from-blue-100 to-blue-200"
+                    }`}
+                  >
+                    {type === "bin" ? (
                       <Package className="w-5 h-5 text-slate-600" />
                     ) : (
                       <MapPin className="w-5 h-5 text-blue-600" />
@@ -429,22 +479,31 @@ export default function HomeScreen() {
                   <div>
                     <h3 className="font-medium text-slate-900">{item.name}</h3>
                     {item.description && (
-                      <p className="text-sm text-slate-500 truncate max-w-md">{item.description}</p>
+                      <p className="text-sm text-slate-500 truncate max-w-md">
+                        {item.description}
+                      </p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  {type === 'bin' && item.qrcodeId && (
-                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                  {type === "bin" && item.qrcodeId && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-emerald-100 text-emerald-700"
+                    >
                       {item?.qrcodeId ?? ""}
                     </Badge>
                   )}
                   <div className="text-right">
                     <div className="font-medium text-slate-900">
-                      {type === 'bin' ? `${item?.itemCount ?? "0"} items` : `${item.binCount} bins`}
+                      {type === "bin"
+                        ? `${item?.itemCount ?? "0"} items`
+                        : `${item.binCount} bins`}
                     </div>
-                    {type === 'bin' && (
-                      <div className="text-xs text-slate-500">{item.updatedAt} ago</div>
+                    {type === "bin" && (
+                      <div className="text-xs text-slate-500">
+                        {item.updatedAt} ago
+                      </div>
                     )}
                   </div>
                   <ArrowUpRight className="w-4 h-4 text-slate-400" />
@@ -455,12 +514,42 @@ export default function HomeScreen() {
         ))}
       </div>
     );
-  }
+  };
 
   //const currentPagination = activeTab === 'bins' ? binsPagination : locationsPagination;
-  const currentData = activeTab === 'bins' ? filteredBins : filteredLocations;
-  const currentSearchText = activeTab === 'bins' ? searchTextBins : searchTextLocations;
-  const setCurrentSearchText = activeTab === 'bins' ? setSearchTextBins : setSearchTextLocations;
+  const currentData = activeTab === "bins" ? filteredBins : filteredLocations;
+  const currentSearchText =
+    activeTab === "bins" ? searchTextBins : searchTextLocations;
+  const setCurrentSearchText =
+    activeTab === "bins" ? setSearchTextBins : setSearchTextLocations;
+
+  const [isAddBinModalOpen, setIsAddBinModalOpen] = useState<boolean>(false);
+
+  const handleAddBin = async (binData: BinData): Promise<void> => {
+    try {
+      if (!binData.name?.trim()) {
+        throw new Error("El nombre del bin es obligatorio.");
+      }
+
+      if (!binData.location) {
+        throw new Error("Debes seleccionar una ubicación.");
+      }
+
+      const newBin = {
+        ...binData,
+        createdAt: new Date().toISOString(),
+        userId: effectiveUserId,
+      };
+
+      const docRef = await addDoc(collection(db, "bins"), newBin);
+      console.log("Bin created with ID:", docRef.id);
+
+      alert("Bin created successfully!");
+    } catch (error: any) {
+      console.error("Error creating bin:", error);
+      toast.error(error);
+    }
+  };
 
   if (loading && currentData.length === 0) {
     return (
@@ -469,7 +558,7 @@ export default function HomeScreen() {
           <div className="flex justify-center items-center min-h-96">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-200 border-t-emerald-600"></div>
-               <p className="text-slate-600">{t('dashboard.loading')}</p>
+              <p className="text-slate-600">{t("dashboard.loading")}</p>
             </div>
           </div>
         </div>
@@ -484,13 +573,14 @@ export default function HomeScreen() {
         <div className="bg-gray-50 border-b border-gray-200">
           <div className="container mx-auto px-6 py-2 max-w-7xl flex items-center justify-end space-x-4">
             <span className="text-sm text-gray-500">
-              {t('dashboard.by')} <strong>{userImpersonated?.ownerUsername}</strong>
+              {t("dashboard.by")}{" "}
+              <strong>{userImpersonated?.ownerUsername}</strong>
             </span>
             <button
               onClick={clearImpersonation}
               className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors duration-200"
             >
-              {t('dashboard.stopImpersonation')}
+              {t("dashboard.stopImpersonation")}
             </button>
           </div>
         </div>
@@ -501,9 +591,9 @@ export default function HomeScreen() {
           <div className="flex items-center justify-between mb-8">
             <div className="space-y-1">
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                {t('dashboard.title')}
+                {t("dashboard.title")}
               </h1>
-              <p className="text-gray-600">{t('dashboard.subtitle')}</p>
+              <p className="text-gray-600">{t("dashboard.subtitle")}</p>
             </div>
           </div>
 
@@ -514,9 +604,11 @@ export default function HomeScreen() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">
-                      {t('dashboard.totalBins')}
+                      {t("dashboard.totalBins")}
                     </p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalBins}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.totalBins}
+                    </p>
                   </div>
                   <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <Package className="w-7 h-7 text-white" />
@@ -530,9 +622,11 @@ export default function HomeScreen() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-blue-600 uppercase tracking-wide">
-                      {t('dashboard.locations')}
+                      {t("dashboard.locations")}
                     </p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalLocations}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.totalLocations}
+                    </p>
                   </div>
                   <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <MapPin className="w-7 h-7 text-white" />
@@ -546,9 +640,11 @@ export default function HomeScreen() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-purple-600 uppercase tracking-wide">
-                      {t('dashboard.totalItems')}
+                      {t("dashboard.totalItems")}
                     </p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalItems}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {stats.totalItems}
+                    </p>
                   </div>
                   <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <TrendingUp className="w-7 h-7 text-white" />
@@ -559,7 +655,11 @@ export default function HomeScreen() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="space-y-8">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value)}
+          className="space-y-8"
+        >
           {/* Tab navigation y controles */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <TabsList className="grid w-96 grid-cols-2 h-12 bg-gray-100 p-1 rounded-xl">
@@ -568,14 +668,14 @@ export default function HomeScreen() {
                 className="flex items-center gap-3 font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
               >
                 <Package className="w-5 h-5" />
-                {t('dashboard.tabs.bins', { count: stats.totalBins })}
+                {t("dashboard.tabs.bins", { count: stats.totalBins })}
               </TabsTrigger>
               <TabsTrigger
                 value="locations"
                 className="flex items-center gap-3 font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
               >
                 <MapPin className="w-5 h-5" />
-                {t('dashboard.tabs.locations', { count: stats.totalLocations })}
+                {t("dashboard.tabs.locations", { count: stats.totalLocations })}
               </TabsTrigger>
             </TabsList>
 
@@ -583,12 +683,26 @@ export default function HomeScreen() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                onClick={() =>
+                  setViewMode(viewMode === "grid" ? "list" : "grid")
+                }
                 className="h-10 px-4 hover:bg-gray-50 transition-colors duration-200"
               >
-                {viewMode === 'grid' ? <List className="w-4 h-4 mr-2" /> : <Grid className="w-4 h-4 mr-2" />}
+                {viewMode === "grid" ? (
+                  <List className="w-4 h-4 mr-2" />
+                ) : (
+                  <Grid className="w-4 h-4 mr-2" />
+                )}
                 {t(`view.${viewMode}`)}
               </Button>
+
+              <button
+                onClick={() => setIsAddBinModalOpen(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus size={20} />
+                <span>Add New Bin</span>
+              </button>
             </div>
           </div>
 
@@ -605,7 +719,7 @@ export default function HomeScreen() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setCurrentSearchText('')}
+                onClick={() => setCurrentSearchText("")}
                 className="absolute right-1 top-1/2 transform -translate-y-1/2 h-9 w-9 p-0 hover:bg-gray-100 rounded-md"
               >
                 <X className="w-4 h-4" />
@@ -623,13 +737,22 @@ export default function HomeScreen() {
                       <Filter className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-900">{t('dashboard.filteringByLocation')}</span>
-                      <span className="ml-2 text-blue-700 font-medium">{filterLocation.name}</span>
+                      <span className="font-semibold text-blue-900">
+                        {t("dashboard.filteringByLocation")}
+                      </span>
+                      <span className="ml-2 text-blue-700 font-medium">
+                        {filterLocation.name}
+                      </span>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={clearLocationFilter} className="hover:bg-blue-100 text-blue-600">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearLocationFilter}
+                    className="hover:bg-blue-100 text-blue-600"
+                  >
                     <X className="w-4 h-4 mr-2" />
-                    {t('actions.clearFilter')}
+                    {t("actions.clearFilter")}
                   </Button>
                 </div>
               </CardContent>
@@ -645,21 +768,23 @@ export default function HomeScreen() {
                     <Package className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {searchTextBins ? t('bins.emptySearch') : t('bins.empty')}
+                    {searchTextBins ? t("bins.emptySearch") : t("bins.empty")}
                   </h3>
                   <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                    {searchTextBins ? t('bins.emptySearchHint') : t('bins.emptyHint')}
+                    {searchTextBins
+                      ? t("bins.emptySearchHint")
+                      : t("bins.emptyHint")}
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <>
-                {viewMode === 'grid' ? (
+                {viewMode === "grid" ? (
                   <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredBins.map(renderBinCard)}
                   </div>
                 ) : (
-                  renderListView(filteredBins, 'bin')
+                  renderListView(filteredBins, "bin")
                 )}
               </>
             )}
@@ -673,27 +798,34 @@ export default function HomeScreen() {
                     <MapPin className="w-8 h-8 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {searchTextLocations ? t('locations.emptySearch') : t('locations.empty')}
+                    {searchTextLocations
+                      ? t("locations.emptySearch")
+                      : t("locations.empty")}
                   </h3>
                   <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                    {searchTextLocations ? t('locations.emptySearchHint') : t('locations.emptyHint')}
+                    {searchTextLocations
+                      ? t("locations.emptySearchHint")
+                      : t("locations.emptyHint")}
                   </p>
                   {!searchTextLocations && (
-                    <Button onClick={() => navigate('/add-location')} className="bg-blue-600 hover:bg-blue-700">
+                    <Button
+                      onClick={() => navigate("/add-location")}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
                       <Plus className="w-4 h-4 mr-2" />
-                      {t('locations.createFirst')}
+                      {t("locations.createFirst")}
                     </Button>
                   )}
                 </CardContent>
               </Card>
             ) : (
               <>
-                {viewMode === 'grid' ? (
+                {viewMode === "grid" ? (
                   <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredLocations.map(renderLocationCard)}
                   </div>
                 ) : (
-                  renderListView(filteredLocations, 'location')
+                  renderListView(filteredLocations, "location")
                 )}
               </>
             )}
@@ -704,21 +836,40 @@ export default function HomeScreen() {
         {currentData.length > 0 && (
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              {t('pagination.showing', { count: currentData.length, type: activeTab })}
+              {t("pagination.showing", {
+                count: currentData.length,
+                type: activeTab,
+              })}
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={loading} className="hover:bg-gray-50">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                className="hover:bg-gray-50"
+              >
                 <ChevronLeft className="w-4 h-4 mr-1" />
-                {t('pagination.previous')}
+                {t("pagination.previous")}
               </Button>
-              <Button variant="outline" size="sm" disabled={loading} className="hover:bg-gray-50">
-                {t('pagination.next')}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                className="hover:bg-gray-50"
+              >
+                {t("pagination.next")}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           </div>
         )}
       </div>
+
+      <AddBinModal
+        isOpen={isAddBinModalOpen}
+        onClose={() => setIsAddBinModalOpen(false)}
+        onSubmit={handleAddBin}
+      />
     </div>
   );
 }
