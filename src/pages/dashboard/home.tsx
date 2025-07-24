@@ -696,17 +696,12 @@ export default function HomeScreen() {
                 {t(`view.${viewMode}`)}
               </Button>
 
-              <button
-                onClick={() => setIsAddBinModalOpen(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-              >
-                <Plus size={20} />
-                <span>Add New Bin</span>
-              </button>
+              
             </div>
           </div>
 
-          {/* Barra de búsqueda */}
+          <div style={{display: 'flex', flexDirection: 'row'}}>
+{/* Barra de búsqueda */}
           <div className="relative max-w-md">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
@@ -726,6 +721,17 @@ export default function HomeScreen() {
               </Button>
             )}
           </div>
+
+          <button
+                onClick={() => setIsAddBinModalOpen(true)}
+                className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus size={20} />
+                <span>Add New Bin</span>
+              </button>
+          </div>
+
+          
 
           {/* Filtro de ubicación */}
           {filterLocation && (

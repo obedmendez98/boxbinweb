@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,7 +16,7 @@ export const Step1 = ({ qrCount, setQrCount, onGenerate }: Step1Props) => {
 
   const { currentUser } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
+  //const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleGenerateClick = async () => {
@@ -27,13 +27,13 @@ export const Step1 = ({ qrCount, setQrCount, onGenerate }: Step1Props) => {
     
     // Simulate generation progress
     const timer = setInterval(() => {
-      setProgress(prev => {
+      /*setProgress(prev => {
         if (prev >= 100) {
           clearInterval(timer);
           return 100;
         }
         return prev + 10;
-      });
+      });*/
     }, 300);
 
     try {
