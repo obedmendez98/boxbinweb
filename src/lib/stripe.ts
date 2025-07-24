@@ -101,8 +101,7 @@ export const createStripeSubscription = async (
         name: billingDetails?.nameOnCard || userName,
         metadata: {
           userId: userId || '',
-          firstName: billingDetails?.firstName,
-          lastName: billingDetails?.lastName
+          name: `${billingDetails?.firstName} ${billingDetails?.lastName}`
         },
         address: billingDetails ? {
           line1: billingDetails.address,
