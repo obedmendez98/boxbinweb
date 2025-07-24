@@ -54,6 +54,44 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <DashboardLayout>{children}</DashboardLayout>;
 };
 
+const ProtectedRouteLayout = ({ children }: { children: React.ReactNode }) => {
+    const { currentUser, loading } = useAuth();
+    const [hasSubscription, setHasSubscription] = useState(false);
+    const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+
+    useEffect(() => {
+        const checkSubscription = async () => {
+            if (currentUser) {
+                const subscriptionsRef = collection(db, 'subscriptions');
+                const q = query(subscriptionsRef, where('userId', '==', currentUser.uid));
+                const querySnapshot = await getDocs(q);
+                setHasSubscription(!querySnapshot.empty);
+            }
+            setSubscriptionLoading(false);
+        };
+
+        checkSubscription();
+    }, [currentUser]);
+
+    if (loading || subscriptionLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!currentUser) {
+        return <Navigate to="/login" replace />;
+    }
+
+    if (!hasSubscription) {
+        return <Navigate to="/billing" replace />;
+    }
+
+    return <>{children}</>;
+};
+
 // Componente para redirigir usuarios autenticados
 const RedirectIfAuthenticated = ({ children }: { children: React.ReactNode }) => {
     const { currentUser, loading } = useAuth();
@@ -88,7 +126,7 @@ const router = createBrowserRouter([
     },
     {
         path: '/billing',
-        element: <BillingPage />,
+        element: <ProtectedRouteLayout> <BillingPage /> </ProtectedRouteLayout> 
     },
     {
         path: '/login',
