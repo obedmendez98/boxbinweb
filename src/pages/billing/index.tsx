@@ -4,7 +4,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 import { useCallback, useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import CheckoutForm from "./CheckoutForm.tsx";
 import { Navigate } from "react-router-dom";
@@ -214,7 +214,7 @@ export default function BillingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {plans.map((plan, index) => {
+              {plans.sort((a, b) => a.unit_amount - b.unit_amount).map((plan, index) => {
                 const IconComponent = planIcons[index % planIcons.length];
                 const isSelected = selectedPlan === plan.id;
                 const isHovered = hoveredPlan === plan.id;
@@ -354,29 +354,53 @@ export default function BillingPage() {
 
           {/* Checkout Form */}
           {selectedPlan && (
-            <div className="mt-5 max-w-lg mx-auto mb-20">
-              <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-200">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    Complete Your Purchase
-                  </h3>
-                  <p className="text-gray-600">
-                    You're one step away from unlocking premium features
-                  </p>
-                </div>
+                <div className="mt-5 max-w-lg mx-auto mb-20">
+                  <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-200">
+                    <div className="text-center mb-8">
+                      <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Sparkles className="w-8 h-8 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                        Complete Your Purchase
+                      </h3>
+                      <p className="text-gray-600">
+                        You're one step away from unlocking premium features
+                      </p>
+                    </div>
 
-                <Elements stripe={stripePromise}>
-                  <CheckoutForm
-                    userId={currentUser?.uid}
-                    planId={selectedPlan}
-                  />
-                </Elements>
-              </div>
-            </div>
-          )}
+                    {plans.find(p => p.id === selectedPlan)?.unit_amount === 0 ? (
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600">This is a free plan - no payment required.</p>
+                        <Button 
+                          onClick={async () => {
+                            try {
+                              await addDoc(collection(db, "subscriptions"), {
+                                userId: currentUser?.uid,
+                                planId: selectedPlan,
+                                status: "active",
+                                createdAt: new Date().toISOString()
+                              });
+                              window.location.reload();
+                            } catch (error) {
+                              console.error("Error creating free subscription:", error);
+                            }
+                          }}
+                          className="w-full"
+                        >
+                          Activate Free Plan
+                        </Button>
+                      </div>
+                    ) : (
+                      <Elements stripe={stripePromise}>
+                        <CheckoutForm
+                          userId={currentUser?.uid}
+                          planId={selectedPlan}
+                        />
+                      </Elements>
+                    )}
+                  </div>
+                </div>
+              )}
         </div>
       </div>
     </div>
