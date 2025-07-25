@@ -37,6 +37,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { AddBinModal, type BinData } from "@/components/layout/AddBin";
 import { toast } from "sonner";
+import { getStripePlanById } from "@/lib/stripe";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -87,6 +88,47 @@ export default function HomeScreen() {
     JSON.parse(localStorage.getItem("impersonatedUser") || "null")
   );
   const effectiveUserId = userImpersonated?.ownerUserId || currentUser?.uid;
+
+  const [subscription, setSubscription] = useState<any | null>(null);
+
+  const fetchSubscription = async () => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const q = query(
+        collection(db, "subscriptions"),
+        where("userId", "==", effectiveUserId)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const sub = querySnapshot.docs[0].data();
+
+        if (sub.planId) {
+          const stripePlan = await getStripePlanById(sub.planId);
+
+          console.log(stripePlan);
+          const fullSubscription = {
+            ...sub,
+            plan: stripePlan?.product?.name ?? "Unknown Plan",
+            price: (stripePlan?.unit_amount ?? 0) / 100,
+            interval: stripePlan?.recurring?.interval ?? "month",
+            metadata: stripePlan?.metadata ?? {},
+          };
+
+          console.log(fullSubscription);
+
+          setSubscription(fullSubscription);
+        } else {
+          setSubscription(sub);
+        }
+      } else {
+        console.log("❌ No se encontró suscripción para el usuario.");
+      }
+    } catch (error) {
+      console.error("🔥 Error al obtener suscripción:", error);
+    }
+  };
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -271,6 +313,7 @@ export default function HomeScreen() {
     if (!effectiveUserId) return;
 
     try {
+      await fetchSubscription();
       const [binsSnap, itemsSnap, locSnap] = await Promise.all([
         getDocs(
           query(collection(db, "bins"), where("userId", "==", effectiveUserId))
@@ -695,43 +738,41 @@ export default function HomeScreen() {
                 )}
                 {t(`view.${viewMode}`)}
               </Button>
-
-              
             </div>
           </div>
 
-          <div style={{display: 'flex', flexDirection: 'row'}}>
-{/* Barra de búsqueda */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              value={currentSearchText}
-              onChange={(e) => setCurrentSearchText(e.target.value)}
-              placeholder={t(`search.${activeTab}Placeholder`)}
-              className="pl-11 pr-12 h-11 bg-white border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 rounded-lg transition-all duration-200"
-            />
-            {currentSearchText && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentSearchText("")}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-9 w-9 p-0 hover:bg-gray-100 rounded-md"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
+          <div style={{ display: "flex", flexDirection: "row" }}>
+            {/* Barra de búsqueda */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                value={currentSearchText}
+                onChange={(e) => setCurrentSearchText(e.target.value)}
+                placeholder={t(`search.${activeTab}Placeholder`)}
+                className="pl-11 pr-12 h-11 bg-white border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 rounded-lg transition-all duration-200"
+              />
+              {currentSearchText && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentSearchText("")}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-9 w-9 p-0 hover:bg-gray-100 rounded-md"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
 
-          <button
+            {stats.totalBins <= Number(subscription?.metadata?.locations) && (
+              <button
                 onClick={() => setIsAddBinModalOpen(true)}
                 className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
               >
                 <Plus size={20} />
                 <span>Add New Bin</span>
               </button>
+            )}
           </div>
-
-          
 
           {/* Filtro de ubicación */}
           {filterLocation && (

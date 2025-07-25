@@ -103,3 +103,39 @@ export const upgradeSubscription = onCall(async (request) => {
     throw new functions.https.HttpsError("internal", err.message);
   }
 });
+
+export const getPlanById = onCall(async (request) => {
+  const { priceId } = request.data;
+
+  if (!priceId || typeof priceId !== "string") {
+    throw new Error("El priceId es requerido y debe ser un string.");
+  }
+
+  try {
+    const price = await stripe.prices.retrieve(priceId, {
+      expand: ["product"],
+    });
+
+    if (!price || typeof price.product !== "object") {
+      throw new Error("No se encontró el producto asociado.");
+    }
+
+    const product = price.product as Stripe.Product;
+
+    return {
+      priceId: price.id,
+      unit_amount: price.unit_amount ?? 0,
+      currency: price.currency,
+      recurring: price.recurring ?? null,
+      product: {
+        id: product.id,
+        name: product.name,
+        description: product.description ?? "",
+        metadata: product.metadata,
+      },
+    };
+  } catch (error: any) {
+    console.error("Error al obtener plan:", error.message);
+    throw new Error("No se pudo obtener el plan.");
+  }
+});
