@@ -85,8 +85,8 @@ const ProtectedRouteLayout = ({ children }: { children: React.ReactNode }) => {
         return <Navigate to="/login" replace />;
     }
 
-    if (!hasSubscription) {
-        return <Navigate to="/billing" replace />;
+    if (hasSubscription) {
+        return <Navigate to="/home" replace />;
     }
 
     return <>{children}</>;
