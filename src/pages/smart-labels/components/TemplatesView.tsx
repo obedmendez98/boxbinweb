@@ -244,12 +244,12 @@ export const TemplatesView = () => {
 
                 {/* Action Buttons */}
                 <div className="space-y-2">
-                  <button
+                  {/*<button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                     onClick={() => console.log('Selected template:', template.id)}
                   >
                     Use Template
-                  </button>
+                  </button> */}
 
                   <button
                     onClick={async () => {

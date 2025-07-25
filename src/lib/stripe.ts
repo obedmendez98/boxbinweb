@@ -134,14 +134,14 @@ export const createStripeSubscription = async (
       default_payment_method: paymentMethodId,
     });*/
 
-    const trialDays = planId === 'price_1RmGukFRvBExIzdOuM8cy2uE' ? 30 : 0;
+    //const trialDays = planId === 'price_1RmGukFRvBExIzdOuM8cy2uE' ? 30 : 0;
 
     const subscription = await stripeClient.subscriptions.create({
       customer: customer.id,
       items: [{ price: planId }],
       expand: ['latest_invoice.payment_intent'],
       default_payment_method: paymentMethodId,
-      trial_period_days: trialDays > 0 ? trialDays : undefined,
+      //trial_period_days: trialDays > 0 ? trialDays : undefined,
     });
 
 

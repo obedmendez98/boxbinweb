@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createStripeSubscription } from '@/lib/stripe';
 
@@ -81,6 +81,14 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
           nameOnCard
         }
       );
+
+      const subscriptionsRef = collection(db, "subscriptions");
+      const q = query(subscriptionsRef, where("userId", "==", userId));
+      const existingSubs = await getDocs(q);
+
+      for (const docSnap of existingSubs.docs) {
+        await deleteDoc(doc(db, "subscriptions", docSnap.id));
+      }
 
       // Save subscription details to Firestore
       await addDoc(collection(db, 'subscriptions'), {

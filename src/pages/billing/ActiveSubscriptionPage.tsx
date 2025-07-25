@@ -2,7 +2,14 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { useCallback, useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import {
   Loader2,
@@ -38,9 +45,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { Elements } from "@stripe/react-stripe-js";
+import CheckoutForm from "./CheckoutForm";
+import { loadStripe } from "@stripe/stripe-js";
+import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripe";
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+
 
 export default function ActiveSubscriptionPage() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
@@ -53,12 +68,32 @@ export default function ActiveSubscriptionPage() {
   const [plansLoading, setPlansLoading] = useState(false);
   const [plansError, setPlansError] = useState<any>(null);
   const [upgradingToPlan, setUpgradingToPlan] = useState<any>(null);
+  const [canUpgrade, setCanUpgrade] = useState(false);
 
   const handleCancelSubscription = async () => {
     setUpgradingToPlan(null);
-    if (!subscription?.stripeSubscriptionId || !subscription?.userId) return;
+    if (!subscription?.stripeSubscriptionId || !subscription?.userId) {
+      if (subscription.plan === "Trial" && subscription.status === "active") {
+        const q = query(
+          collection(db, "subscriptions"),
+          where("userId", "==", currentUser?.uid)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // Obtener el ID del documento
+          const docId = querySnapshot.docs[0].id;
+          await deleteDoc(doc(db, "subscriptions", docId));
+          navigate("/billing");
+        }
+        return;
+      }
+      return;
+    }
     setRedirecting(true);
 
+    console.log(subscription.stripeSubscriptionId, subscription.userId);
     try {
       await cancelUserSubscription(
         subscription.stripeSubscriptionId,
@@ -111,6 +146,16 @@ export default function ActiveSubscriptionPage() {
   };
 
   const handleUpgradeToPlan = async (newPriceId: string) => {
+    if (
+      !subscription?.stripeSubscriptionId &&
+      subscription.plan === "Trial" &&
+      subscription.status === "active"
+    ){
+      setSelectedPlan(newPriceId);
+      setCanUpgrade(true);
+      return;
+    }
+    
     if (!subscription?.stripeSubscriptionId || !currentUser?.uid) return;
 
     try {
@@ -133,6 +178,8 @@ export default function ActiveSubscriptionPage() {
     }
   };
 
+  const [selectedPlan, setSelectedPlan] = useState<string>("");
+
   useEffect(() => {
     const fetchSubscription = async () => {
       if (!currentUser?.uid) return;
@@ -147,6 +194,7 @@ export default function ActiveSubscriptionPage() {
         if (!querySnapshot.empty) {
           const sub = querySnapshot.docs[0].data();
 
+          console.log(sub, " sun");
           if (sub.planId) {
             const stripePlan = await getStripePlanById(sub.planId);
 
@@ -226,7 +274,7 @@ export default function ActiveSubscriptionPage() {
             Your <span className="text-indigo-600">Subscription</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-xl mx-auto leading-relaxed">
-            Here are the details of your current subscription. 
+            Here are the details of your current subscription.
           </p>
           <p className="text-lg text-gray-600 max-w-xl mx-auto leading-relaxed">
             You can manage or cancel anytime.
@@ -410,7 +458,15 @@ export default function ActiveSubscriptionPage() {
               ) : (
                 <div className="space-y-4">
                   {/* Grid de planes más compacto */}
-                  <div className={`grid gap-4 grid-cols-1 ${plans.length === 1 ? 'md:grid-cols-1' : plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                  <div
+                    className={`grid gap-4 grid-cols-1 ${
+                      plans.length === 1
+                        ? "md:grid-cols-1"
+                        : plans.length === 2
+                        ? "md:grid-cols-2"
+                        : "md:grid-cols-3"
+                    }`}
+                  >
                     {plans.map((plan: any) => (
                       <div key={plan.id} className="relative">
                         {/* Badge de popular más pequeño */}
@@ -601,6 +657,17 @@ export default function ActiveSubscriptionPage() {
                       </div>
                     ))}
                   </div>
+
+                  {
+                              canUpgrade && (
+                                <Elements stripe={stripePromise}>
+                                  <CheckoutForm
+                                    userId={currentUser?.uid}
+                                    planId={selectedPlan}
+                                  />
+                                </Elements>
+                              )
+                            }
                 </div>
               )}
             </div>

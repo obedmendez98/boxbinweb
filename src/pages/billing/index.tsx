@@ -48,7 +48,9 @@ export default function BillingPage() {
           const subData = docSnap.data();
           setSubscription(subData);
           // Filter plans to only show higher tiers
-          const currentPlanIndex = plans.findIndex(plan => plan.id === subData.planId);
+          const currentPlanIndex = plans.findIndex(
+            (plan) => plan.id === subData.planId
+          );
           if (currentPlanIndex !== -1) {
             setPlans(plans.slice(currentPlanIndex + 1));
           }
@@ -214,193 +216,200 @@ export default function BillingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {plans.sort((a, b) => a.unit_amount - b.unit_amount).map((plan, index) => {
-                const IconComponent = planIcons[index % planIcons.length];
-                const isSelected = selectedPlan === plan.id;
-                const isHovered = hoveredPlan === plan.id;
-                const isPopular = index === Math.floor(plans.length / 2);
+              {plans
+                .sort((a, b) => a.unit_amount - b.unit_amount)
+                .map((plan, index) => {
+                  const IconComponent = planIcons[index % planIcons.length];
+                  const isSelected = selectedPlan === plan.id;
+                  const isHovered = hoveredPlan === plan.id;
+                  const isPopular = index === Math.floor(plans.length / 2);
 
-                return (
-                  <div
-                    key={plan.id}
-                    onClick={() => setSelectedPlan(plan.id)}
-                    onMouseEnter={() => setHoveredPlan(plan.id)}
-                    onMouseLeave={() => setHoveredPlan("")}
-                    className="cursor-pointer transform transition-all duration-300 hover:scale-105 relative"
-                  >
-                    {/* Popular Badge */}
-                    {isPopular && (
-                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                        <div className="bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                          <div className="flex items-center space-x-1">
-                            <Crown className="w-4 h-4" />
-                            <span>Most Popular</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <Card
-                      className={`relative h-full transition-all duration-300 flex flex-col ${
-                        isSelected
-                          ? "border-2 border-indigo-500 shadow-xl bg-indigo-50"
-                          : isHovered
-                          ? "border-2 border-indigo-300 shadow-lg bg-gray-50"
-                          : "border border-gray-200 hover:border-gray-300 shadow-md bg-white"
-                      }`}
+                  return (
+                    <div
+                      key={plan.id}
+                      onClick={() => setSelectedPlan(plan.id)}
+                      onMouseEnter={() => setHoveredPlan(plan.id)}
+                      onMouseLeave={() => setHoveredPlan("")}
+                      className="cursor-pointer transform transition-all duration-300 hover:scale-105 relative"
                     >
-                      {/* Selected Indicator */}
-                      {isSelected && (
-                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg z-10">
-                          <Check className="w-4 h-4 text-white" />
+                      {/* Popular Badge */}
+                      {isPopular && (
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                          <div className="bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                            <div className="flex items-center space-x-1">
+                              <Crown className="w-4 h-4" />
+                              <span>Most Popular</span>
+                            </div>
+                          </div>
                         </div>
                       )}
 
-                      <CardHeader className="">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-3 transition-all duration-300 ${
-                            isSelected
-                              ? "bg-indigo-600 shadow-lg"
-                              : isHovered
-                              ? "bg-indigo-500 shadow-lg"
-                              : "bg-gray-600"
-                          }`}
-                        >
-                          <IconComponent className="w-6 h-6 text-white" />
-                        </div>
-
-                        <CardTitle className="text-lg font-bold text-center text-gray-900 mb-2">
-                          {plan.product.name}
-                        </CardTitle>
-                        {plan.product.description && (
-                          <p className="text-xs text-gray-600 text-center leading-relaxed">
-                            {plan.product.description}
-                          </p>
+                      <Card
+                        className={`relative h-full transition-all duration-300 flex flex-col ${
+                          isSelected
+                            ? "border-2 border-indigo-500 shadow-xl bg-indigo-50"
+                            : isHovered
+                            ? "border-2 border-indigo-300 shadow-lg bg-gray-50"
+                            : "border border-gray-200 hover:border-gray-300 shadow-md bg-white"
+                        }`}
+                      >
+                        {/* Selected Indicator */}
+                        {isSelected && (
+                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg z-10">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
                         )}
-                      </CardHeader>
 
-                      <CardContent className="pt-0 pb-4 flex-1 flex flex-col">
-                        <div className="text-center mb-2">
-                          <div className="flex items-baseline justify-center gap-1 mb-1">
-                            <span className="text-3xl font-bold text-gray-900">
-                              ${(plan.unit_amount / 100).toFixed(2)}
-                            </span>
-                            <span className="text-gray-600 font-medium text-sm">
-                              /{plan.recurring.interval}
-                            </span>
+                        <CardHeader className="">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-3 transition-all duration-300 ${
+                              isSelected
+                                ? "bg-indigo-600 shadow-lg"
+                                : isHovered
+                                ? "bg-indigo-500 shadow-lg"
+                                : "bg-gray-600"
+                            }`}
+                          >
+                            <IconComponent className="w-6 h-6 text-white" />
                           </div>
-                          <p className="text-xs text-gray-500">
-                            Billed {plan.recurring.interval}ly
-                          </p>
-                        </div>
 
-                        {/* Aquí van los features */}
-                        <div className="mb-4 space-y-1 text-sm text-gray-700 flex-1">
-                          {/* Trial period display */}
-                          {plan.metadata?.trial === 'true' && (
-                            <p className="text-green-600 font-semibold mb-2">
-                              🎉 30-day free trial included
+                          <CardTitle className="text-lg font-bold text-center text-gray-900 mb-2">
+                            {plan.product.name}
+                          </CardTitle>
+                          {plan.product.description && (
+                            <p className="text-xs text-gray-600 text-center leading-relaxed">
+                              {plan.product.description}
                             </p>
                           )}
-                          {plan.metadata?.bins && (
-                            <p>
-                              📦 Bins:{" "}
-                              <span className="font-semibold">
-                                {plan.metadata.bins}
-                              </span>
-                            </p>
-                          )}
-                          {plan.metadata?.items && (
-                            <p>
-                              📦 Items:{" "}
-                              <span className="font-semibold">
-                                {plan.metadata.items}
-                              </span>
-                            </p>
-                          )}
-                          {plan.metadata?.locations && (
-                            <p>
-                              📍 Locations:{" "}
-                              <span className="font-semibold">
-                                {plan.metadata.locations}
-                              </span>
-                            </p>
-                          )}
-                        </div>
+                        </CardHeader>
 
-                        <Button
-                          className={`w-full py-3 text-sm font-semibold transition-all duration-300 ${
-                            isSelected
-                              ? "bg-indigo-600 hover:bg-indigo-700 shadow-lg"
-                              : isHovered
-                              ? "bg-indigo-600 hover:bg-indigo-700 shadow-lg"
-                              : "bg-gray-900 hover:bg-gray-800 shadow-md"
-                          } text-white`}
-                        >
-                          <div className="flex items-center justify-center space-x-2">
-                            {isSelected && <Check className="w-4 h-4" />}
-                            <span>
-                              {isSelected ? "Selected" : "Select Plan"}
-                            </span>
+                        <CardContent className="pt-0 pb-4 flex-1 flex flex-col">
+                          <div className="text-center mb-2">
+                            <div className="flex items-baseline justify-center gap-1 mb-1">
+                              <span className="text-3xl font-bold text-gray-900">
+                                ${(plan.unit_amount / 100).toFixed(2)}
+                              </span>
+                              <span className="text-gray-600 font-medium text-sm">
+                                /{plan.recurring.interval}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Billed {plan.recurring.interval}ly
+                            </p>
                           </div>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                );
-              })}
+
+                          {/* Aquí van los features */}
+                          <div className="mb-4 space-y-1 text-sm text-gray-700 flex-1">
+                            {/* Trial period display */}
+                            {plan.metadata?.trial === "true" && (
+                              <p className="text-green-600 font-semibold mb-2">
+                                🎉 30-day free trial included
+                              </p>
+                            )}
+                            {plan.metadata?.bins && (
+                              <p>
+                                📦 Bins:{" "}
+                                <span className="font-semibold">
+                                  {plan.metadata.bins}
+                                </span>
+                              </p>
+                            )}
+                            {plan.metadata?.items && (
+                              <p>
+                                📦 Items:{" "}
+                                <span className="font-semibold">
+                                  {plan.metadata.items}
+                                </span>
+                              </p>
+                            )}
+                            {plan.metadata?.locations && (
+                              <p>
+                                📍 Locations:{" "}
+                                <span className="font-semibold">
+                                  {plan.metadata.locations}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+
+                          <Button
+                            className={`w-full py-3 text-sm font-semibold transition-all duration-300 ${
+                              isSelected
+                                ? "bg-indigo-600 hover:bg-indigo-700 shadow-lg"
+                                : isHovered
+                                ? "bg-indigo-600 hover:bg-indigo-700 shadow-lg"
+                                : "bg-gray-900 hover:bg-gray-800 shadow-md"
+                            } text-white`}
+                          >
+                            <div className="flex items-center justify-center space-x-2">
+                              {isSelected && <Check className="w-4 h-4" />}
+                              <span>
+                                {isSelected ? "Selected" : "Select Plan"}
+                              </span>
+                            </div>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                })}
             </div>
           )}
 
           {/* Checkout Form */}
           {selectedPlan && (
-                <div className="mt-5 max-w-lg mx-auto mb-20">
-                  <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-200">
-                    <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Sparkles className="w-8 h-8 text-white" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                        Complete Your Purchase
-                      </h3>
-                      <p className="text-gray-600">
-                        You're one step away from unlocking premium features
-                      </p>
-                    </div>
-
-                    {plans.find(p => p.id === selectedPlan)?.unit_amount === 0 ? (
-                      <div className="space-y-4">
-                        <p className="text-sm text-gray-600">This is a free plan - no payment required.</p>
-                        <Button 
-                          onClick={async () => {
-                            try {
-                              await addDoc(collection(db, "subscriptions"), {
-                                userId: currentUser?.uid,
-                                planId: selectedPlan,
-                                status: "active",
-                                createdAt: new Date().toISOString()
-                              });
-                              window.location.reload();
-                            } catch (error) {
-                              console.error("Error creating free subscription:", error);
-                            }
-                          }}
-                          className="w-full"
-                        >
-                          Activate Free Plan
-                        </Button>
-                      </div>
-                    ) : (
-                      <Elements stripe={stripePromise}>
-                        <CheckoutForm
-                          userId={currentUser?.uid}
-                          planId={selectedPlan}
-                        />
-                      </Elements>
-                    )}
+            <div className="mt-5 max-w-lg mx-auto mb-20">
+              <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-200">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="w-8 h-8 text-white" />
                   </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Complete Your Purchase
+                  </h3>
+                  <p className="text-gray-600">
+                    You're one step away from unlocking premium features
+                  </p>
                 </div>
-              )}
+
+                {plans.find((p) => p.id === selectedPlan)?.unit_amount === 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                      This is a free plan - no payment required.
+                    </p>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          await addDoc(collection(db, "subscriptions"), {
+                            userId: currentUser?.uid,
+                            planId: selectedPlan,
+                            status: "active",
+                            createdAt: new Date().toISOString(),
+                          });
+                          window.location.reload();
+                        } catch (error) {
+                          console.error(
+                            "Error creating free subscription:",
+                            error
+                          );
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Activate Free Plan
+                    </Button>
+                  </div>
+                ) : (
+                  <Elements stripe={stripePromise}>
+                    <CheckoutForm
+                      userId={currentUser?.uid}
+                      planId={selectedPlan}
+                    />
+                  </Elements>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
