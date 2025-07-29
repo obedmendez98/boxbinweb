@@ -13,11 +13,14 @@ const LoginByToken = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+
     const token: any = searchParams.get('token');
     const providerId = searchParams.get('provider') || 'google.com';
+    console.log(token)
+    console.log(providerId, ' d');
     if (!token) {
       console.error('Falta token en la URL');
-      navigate('/login');
+      //navigate('/login');
       return;
     }
 
