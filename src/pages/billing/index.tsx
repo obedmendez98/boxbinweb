@@ -3,7 +3,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import CheckoutForm from "./CheckoutForm.tsx";
@@ -28,6 +28,15 @@ export default function BillingPage() {
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [hoveredPlan, setHoveredPlan] = useState<string>("");
+
+  const checkoutRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to checkout form when a plan is selected
+  useEffect(() => {
+    if (selectedPlan && checkoutRef.current) {
+      checkoutRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedPlan]);
 
   const handleLogout = async () => {
     try {
@@ -215,7 +224,7 @@ export default function BillingPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
               {plans
                 .sort((a, b) => a.unit_amount - b.unit_amount)
                 .map((plan, index) => {
@@ -358,7 +367,7 @@ export default function BillingPage() {
 
           {/* Checkout Form */}
           {selectedPlan && (
-            <div className="mt-5 max-w-lg mx-auto mb-20">
+            <div ref={checkoutRef} className="mt-5 max-w-lg mx-auto mb-20">
               <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-200">
                 <div className="text-center mb-8">
                   <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">

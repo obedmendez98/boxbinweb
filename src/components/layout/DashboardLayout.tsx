@@ -6,7 +6,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden safe-top safe-bottom">
       {/* Sidebar */}
       <Sidebar />
       
