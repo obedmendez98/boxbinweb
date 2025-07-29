@@ -38,6 +38,7 @@ import { useTranslation } from "react-i18next";
 import { AddBinModal, type BinData } from "@/components/layout/AddBin";
 import { toast } from "sonner";
 import { getStripePlanById } from "@/lib/stripe";
+import { ModalMessage, type ModalType } from "@/components/layout/ModalMessage";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -81,6 +82,30 @@ interface PaginationState {
 export default function HomeScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: ModalType;
+    message: string;
+    title?: string;
+  }>({
+    isOpen: false,
+    type: 'info',
+    message: ''
+  });
+
+  const openModal = (type: ModalType, message: string, title?: string) => {
+    setModalState({
+      isOpen: true,
+      type,
+      message,
+      title
+    });
+  };
+
+  const closeModal = () => {
+    setModalState(prev => ({ ...prev, isOpen: false }));
+  };
 
   // Auth & impersonation
   const { currentUser } = useAuth();
@@ -574,20 +599,19 @@ export default function HomeScreen() {
         throw new Error("El nombre del bin es obligatorio.");
       }
 
-      if (!binData.location) {
-        throw new Error("Debes seleccionar una ubicación.");
-      }
-
       const newBin = {
         ...binData,
         createdAt: new Date().toISOString(),
         userId: effectiveUserId,
+        location: binData?.location ?? ""
       };
 
       const docRef = await addDoc(collection(db, "bins"), newBin);
       console.log("Bin created with ID:", docRef.id);
 
-      alert("Bin created successfully!");
+      openModal("success", "Bin created successfully!", "")
+
+      await fetchBins();
     } catch (error: any) {
       console.error("Error creating bin:", error);
       toast.error(error);
@@ -917,6 +941,14 @@ export default function HomeScreen() {
         onClose={() => setIsAddBinModalOpen(false)}
         onSubmit={handleAddBin}
       />
+
+      <ModalMessage
+    isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        message={modalState.message}
+        title={modalState.title}
+/>
     </div>
   );
 }
