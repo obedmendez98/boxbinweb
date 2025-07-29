@@ -140,8 +140,8 @@ export const getPlanById = onCall(async (request) => {
   }
 });
 
-export const mintCustomToken = onCall(async (data, context) => {
-  const idToken = data.idToken as string;
+export const mintCustomToken = onCall(async (request) => {
+  const { idToken } = request.data;
   if (!idToken) {
     throw new functions.https.HttpsError('invalid-argument', 'No ID token provided');
   }
