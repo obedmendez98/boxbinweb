@@ -14,6 +14,7 @@ import { LocationsManager } from '@/pages/dashboard/Locations';
 import SocialScreen from '@/pages/dashboard/SocialScreen';
 import ActiveSubscriptionPage from '@/pages/billing/ActiveSubscriptionPage';
 import { TemplatesView } from '@/pages/smart-labels/components/TemplatesView';
+import LoginByToken from '@/pages/auth/login-by-token';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -133,6 +134,14 @@ const router = createBrowserRouter([
         element: (
             <RedirectIfAuthenticated>
                 <LoginPage />
+            </RedirectIfAuthenticated>
+        ),
+    },
+    {
+        path: '/login-by-token',
+        element: (
+            <RedirectIfAuthenticated>
+                <LoginByToken />
             </RedirectIfAuthenticated>
         ),
     },
