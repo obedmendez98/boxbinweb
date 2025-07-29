@@ -139,3 +139,26 @@ export const getPlanById = onCall(async (request) => {
     throw new Error("No se pudo obtener el plan.");
   }
 });
+
+export const mintCustomToken = onCall(async (data, context) => {
+  const idToken = data.idToken as string;
+  if (!idToken) {
+    throw new functions.https.HttpsError('invalid-argument', 'No ID token provided');
+  }
+
+  // Verificamos el ID token de Firebase
+  let decoded;
+  try {
+    decoded = await admin.auth().verifyIdToken(idToken);
+  } catch (e) {
+    throw new functions.https.HttpsError('unauthenticated', 'Invalid ID token');
+  }
+
+  // Creamos un custom token para ese uid
+  try {
+    const customToken = await admin.auth().createCustomToken(decoded.uid);
+    return { customToken };
+  } catch (e) {
+    throw new functions.https.HttpsError('internal', 'Could not create custom token');
+  }
+});

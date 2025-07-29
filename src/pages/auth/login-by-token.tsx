@@ -3,49 +3,45 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getAuth,
-  OAuthProvider,
-  GoogleAuthProvider,
-  signInWithCredential
+  signInWithCustomToken
 } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const LoginByToken = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
+   useEffect(() => {
+    const doLogin = async () => {
+      const idToken = searchParams.get('token');
+      if (!idToken) {
+        //setError('No se pasó token');
+        return navigate('/login');
+      }
 
-    const token: any = searchParams.get('token');
-    const providerId = searchParams.get('provider') || 'google.com';
-    console.log(token)
-    console.log(providerId, ' d');
-    if (!token) {
-      console.error('Falta token en la URL');
-      //navigate('/login');
-      return;
-    }
+      try {
+        const functions = getFunctions();
+        // Llamamos a la Cloud Function para generar el custom token
+        const mint = httpsCallable(functions, 'mintCustomToken');
+        const result: any = await mint({ idToken });
+        const customToken: string = result?.data?.customToken;
 
-    const auth = getAuth();
-    let credential;
+        // Ahora autenticamos al usuario en la web con ese customToken
+        const auth = getAuth();
+        await signInWithCustomToken(auth, customToken);
 
-    if (providerId === 'google.com') {
-      // Para Google usamos el helper estático
-      credential = GoogleAuthProvider.credential(/* accessToken */ null, token);
-    } else {
-      // Para Apple, Yahoo, etc. creamos una instancia y usamos el método de instancia
-      const provider = new OAuthProvider(providerId);
-      // El primer parámetro es idToken, el segundo (opcional) accessToken
-      credential = provider.credential(token);
-    }
-
-    signInWithCredential(auth, credential)
-      .then(() => {
-        // Usuario autenticado, redirigimos
+        // Ya autenticado, redirige
         navigate('/billing', { replace: true });
-      })
-      .catch(err => {
-        console.error('Error al iniciar sesión con token:', err);
-        navigate('/login?error=token');
-      });
+      } catch (e: any) {
+        console.error('Login by token falló:', e);
+        //setError(e.message || 'Error desconocido');
+        navigate('/login?error=invalid_token');
+      } finally {
+        //setLoading(false);
+      }
+    };
+
+    doLogin();
   }, [searchParams, navigate]);
 
   return (
