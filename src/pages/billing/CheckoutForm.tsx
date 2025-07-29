@@ -111,8 +111,16 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         updatedAt: new Date(),
       });
 
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'SUBSCRIPTION_SUCCESS',
+        }));
+      } else {
+        window.location.href = '/home';
+      }
+
       // Redirect to dashboard after successful payment
-      window.location.href = '/home';
+      //window.location.href = '/home';
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);

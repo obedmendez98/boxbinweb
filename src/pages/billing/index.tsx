@@ -35,6 +35,16 @@ export default function BillingPage() {
   useEffect(() => {
     if (selectedPlan && checkoutRef.current) {
       checkoutRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'SUBSCRIPTION_SUCCESS',
+        }));
+
+        console.log("ndjdnjd");
+      } else {
+        console.log("skjnjs");
+      }
     }
   }, [selectedPlan]);
 
