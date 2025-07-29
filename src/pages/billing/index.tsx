@@ -35,16 +35,6 @@ export default function BillingPage() {
   useEffect(() => {
     if (selectedPlan && checkoutRef.current) {
       checkoutRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-      if ((window as any).ReactNativeWebView) {
-        (window as any).ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'SUBSCRIPTION_SUCCESS',
-        }));
-
-        console.log("ndjdnjd");
-      } else {
-        console.log("skjnjs");
-      }
     }
   }, [selectedPlan]);
 
@@ -405,7 +395,14 @@ export default function BillingPage() {
                             status: "active",
                             createdAt: new Date().toISOString(),
                           });
-                          window.location.reload();
+                          
+                          if ((window as any).ReactNativeWebView) {
+                            (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+                              type: 'SUBSCRIPTION_SUCCESS',
+                            }));
+                          } else {
+                            window.location.reload();
+                          }
                         } catch (error) {
                           console.error(
                             "Error creating free subscription:",
