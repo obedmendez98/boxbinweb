@@ -2,6 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import Stripe from "stripe";
+import { logger } from "firebase-functions";
 
 admin.initializeApp();
 
@@ -141,24 +142,46 @@ export const getPlanById = onCall(async (request) => {
 });
 
 export const mintCustomToken = onCall(async (request) => {
-  const { idToken } = request.data;
-  if (!idToken) {
-    throw new functions.https.HttpsError('invalid-argument', 'No ID token provided');
-  }
+  // 1️⃣ Log inicial
+  logger.log('mintCustomToken called with data:', request.data);
 
-  // Verificamos el ID token de Firebase
-  let decoded;
+  const idToken = request.data?.idToken as string | undefined;
+  if (!idToken) {
+    logger.error('No ID token provided in request.data');
+    throw new Error('invalid-argument: No ID token provided');
+  }
+  logger.log('ID token received, verifying…');
+  // 2️⃣ Verificar el ID token de Firebase
+  let decoded: admin.auth.DecodedIdToken;
   try {
     decoded = await admin.auth().verifyIdToken(idToken);
-  } catch (e) {
-    throw new functions.https.HttpsError('unauthenticated', 'Invalid ID token');
+    logger.log(`ID token valid. UID = ${decoded.uid}`);
+  } catch (e: any) {
+    logger.error('verifyIdToken failed:', e);
+    throw new Error('unauthenticated: Invalid ID token');
   }
 
-  // Creamos un custom token para ese uid
+  /*// 3️⃣ Verificar que el usuario existe
+  try {
+    const userRecord = await admin.auth().getUser(decoded.uid);
+    logger.log('User record fetched:', {
+      uid: userRecord.uid,
+      email: userRecord.email,
+      providerData: userRecord.providerData,
+    });
+  } catch (e: any) {
+    logger.error('getUser failed for uid', decoded.uid, e);
+    throw new Error('not-found: User record not found');
+  }*/
+
+  // 4️⃣ Crear el custom token
   try {
     const customToken = await admin.auth().createCustomToken(decoded.uid);
+    logger.log(`Custom token minted for UID ${decoded.uid}`);
     return { customToken };
-  } catch (e) {
-    throw new functions.https.HttpsError('internal', 'Could not create custom token');
+  } catch (e: any) {
+    logger.error('createCustomToken failed:', e);
+    throw new Error(`internal: Could not create custom token: ${e.message}`);
   }
-});
+}
+);
