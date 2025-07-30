@@ -312,7 +312,7 @@ export default function BillingPage() {
                             {/* Trial period display */}
                             {plan.metadata?.trial === "true" && (
                               <p className="text-green-600 font-semibold mb-2">
-                                🎉 30-day free trial included
+                                🎉 30 Days Free Trial
                               </p>
                             )}
                             {plan.metadata?.bins && (
