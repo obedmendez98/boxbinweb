@@ -262,11 +262,11 @@ export default function BillingPage() {
                     >
                       {/* Popular Badge */}
                       {isPopular && (
-                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                          <div className="bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                            <div className="flex items-center space-x-1">
-                              <Crown className="w-4 h-4" />
-                              <span>Most Popular</span>
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-[140px]">
+                          <div className="bg-indigo-600 text-white px-3 py-1 rounded-full font-bold shadow-lg w-full">
+                            <div className="flex items-center justify-center space-x-1 w-full">
+                              <Crown className="w-[0.9em] h-[0.9em]" />
+                              <span className="text-[0.9em] whitespace-nowrap">Most Popular</span>
                             </div>
                           </div>
                         </div>
@@ -331,7 +331,7 @@ export default function BillingPage() {
                             {/* Trial period display */}
                             {plan.metadata?.trial === "true" && (
                               <p className="text-green-600 font-semibold mb-2">
-                                🎉 30-day free trial included
+                                🎉 30 Days Free Trial
                               </p>
                             )}
                             {plan.metadata?.bins && (
