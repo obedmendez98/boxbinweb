@@ -151,12 +151,31 @@ export default function BillingPage() {
               <div className="h-6 w-px bg-gray-300"></div>
               <span className="text-gray-600 font-medium">Subscription</span>
             </div>
-            <Button
+
+            {
+              ((window as any).ReactNativeWebView) ? (
+<Button
+              onClick={() => {
+                (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'SUBSCRIPTION_SUCCESS',
+        }));
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Back
+            </Button>
+              ):(
+<Button
               onClick={handleLogout}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Logout
             </Button>
+              )
+    
+            }
+
+            
           </div>
         </div>
       </div>
