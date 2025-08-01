@@ -34,7 +34,10 @@ export default function BillingPage() {
   // Scroll to checkout form when a plan is selected
   useEffect(() => {
     if (selectedPlan && checkoutRef.current) {
-      checkoutRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      checkoutRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   }, [selectedPlan]);
 
@@ -152,30 +155,27 @@ export default function BillingPage() {
               <span className="text-gray-600 font-medium">Subscription</span>
             </div>
 
-            {
-              ((window as any).ReactNativeWebView) ? (
-<Button
-              onClick={() => {
-                (window as any).ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'SUBSCRIPTION_SUCCESS',
-        }));
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Back
-            </Button>
-              ):(
-<Button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Logout
-            </Button>
-              )
-    
-            }
-
-            
+            {(window as any).ReactNativeWebView ? (
+              <Button
+                onClick={() => {
+                  (window as any).ReactNativeWebView.postMessage(
+                    JSON.stringify({
+                      type: "SUBSCRIPTION_SUCCESS",
+                    })
+                  );
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Back
+              </Button>
+            ) : (
+              <Button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Logout
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -266,7 +266,9 @@ export default function BillingPage() {
                           <div className="bg-indigo-600 text-white px-3 py-1 rounded-full font-bold shadow-lg w-full">
                             <div className="flex items-center justify-center space-x-1 w-full">
                               <Crown className="w-[0.9em] h-[0.9em]" />
-                              <span className="text-[0.9em] whitespace-nowrap">Most Popular</span>
+                              <span className="text-[0.9em] whitespace-nowrap">
+                                Most Popular
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -414,11 +416,13 @@ export default function BillingPage() {
                             status: "active",
                             createdAt: new Date().toISOString(),
                           });
-                          
+
                           if ((window as any).ReactNativeWebView) {
-                            (window as any).ReactNativeWebView.postMessage(JSON.stringify({
-                              type: 'SUBSCRIPTION_SUCCESS',
-                            }));
+                            (window as any).ReactNativeWebView.postMessage(
+                              JSON.stringify({
+                                type: "SUBSCRIPTION_SUCCESS",
+                              })
+                            );
                           } else {
                             window.location.reload();
                           }

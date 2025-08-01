@@ -584,7 +584,6 @@ export default function HomeScreen() {
     );
   };
 
-  //const currentPagination = activeTab === 'bins' ? binsPagination : locationsPagination;
   const currentData = activeTab === "bins" ? filteredBins : filteredLocations;
   const currentSearchText =
     activeTab === "bins" ? searchTextBins : searchTextLocations;
@@ -596,7 +595,7 @@ export default function HomeScreen() {
   const handleAddBin = async (binData: BinData): Promise<void> => {
     try {
       if (!binData.name?.trim()) {
-        throw new Error("El nombre del bin es obligatorio.");
+        throw new Error("Name is required");
       }
 
       const newBin = {
