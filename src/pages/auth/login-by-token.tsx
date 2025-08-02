@@ -6,10 +6,12 @@ import {
   signInWithCustomToken
 } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useTranslation } from 'react-i18next';
 
 const LoginByToken = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation()
 
    useEffect(() => {
     const doLogin = async () => {
@@ -53,7 +55,7 @@ const LoginByToken = () => {
         justifyContent: 'center'
       }}
     >
-      <p>Autenticando, por favor espera…</p>
+      <p>{t('auth.signInSubtitle')}</p>
     </div>
   );
 };

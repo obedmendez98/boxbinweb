@@ -5,7 +5,8 @@
     "welcome": "Bienvenido de nuevo",
     "continueWithGoogle": "Continuar con Google",
     "continueWithApple": "Continuar con Apple",
-    "continueWithYahoo": "Continuar con Yahoo"
+    "continueWithYahoo": "Continuar con Yahoo",
+      "authenticating": "Autenticando, por favor espera…"
   },
   "sidebar": {
     "dashboard": "Dashboard",
