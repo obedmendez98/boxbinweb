@@ -1,32 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Plus, 
-  Trash2, 
-  MapPin, 
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Edit,
+  Plus,
+  Trash2,
+  MapPin,
   Calendar,
   Package,
   ImageIcon,
   X,
   Minus,
   Loader2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { getStripePlanById } from '@/lib/stripe';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import { getStripePlanById } from "@/lib/stripe";
 
 export const uploadImage = async (file: File): Promise<string> => {
   const storage = getStorage();
@@ -36,29 +67,29 @@ export const uploadImage = async (file: File): Promise<string> => {
 };
 
 const extractStoragePath = (url: string | null): string | null => {
-    if (!url) return null;
-  
-    // 1. Si ya es un path válido (sin dominios ni tokens)
-    if (!url.includes('http') && !url.startsWith('gs://')) {
-      return url;
-    }
-  
-    // 2. Si es una URL pública de Firebase Storage
-    if (url.includes('firebasestorage.googleapis.com')) {
-      const match = decodeURIComponent(url).match(/\/o\/(.*?)\?/);
-      return match?.[1] || null;
-    }
-  
-    // 3. Si es una URL gs://bucket/path
-    if (url.startsWith('gs://')) {
-      const parts = url.replace('gs://', '').split('/');
-      parts.shift(); // remove bucket name
-      return parts.join('/');
-    }
-  
-    // Si no coincide con ningún formato conocido
-    return null;
-};  
+  if (!url) return null;
+
+  // 1. Si ya es un path válido (sin dominios ni tokens)
+  if (!url.includes("http") && !url.startsWith("gs://")) {
+    return url;
+  }
+
+  // 2. Si es una URL pública de Firebase Storage
+  if (url.includes("firebasestorage.googleapis.com")) {
+    const match = decodeURIComponent(url).match(/\/o\/(.*?)\?/);
+    return match?.[1] || null;
+  }
+
+  // 3. Si es una URL gs://bucket/path
+  if (url.startsWith("gs://")) {
+    const parts = url.replace("gs://", "").split("/");
+    parts.shift(); // remove bucket name
+    return parts.join("/");
+  }
+
+  // Si no coincide con ningún formato conocido
+  return null;
+};
 
 // types.ts
 export interface BinDetails {
@@ -92,7 +123,7 @@ const BinDetailsScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  
+
   // States
   const [bin, setBin] = useState<BinDetails | null>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -102,64 +133,66 @@ const BinDetailsScreen: React.FC = () => {
   const [isEditBinOpen, setIsEditBinOpen] = useState(false);
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [selectedModalImage, setSelectedModalImage] = useState<string | undefined | null>(null);
-  
+  const [selectedModalImage, setSelectedModalImage] = useState<
+    string | undefined | null
+  >(null);
+
   const incrementQuantity = () => setItemCuantity((prev: any) => prev + 1);
-  const decrementQuantity = () => setItemCuantity((prev: any) => Math.max(0, prev - 1));
+  const decrementQuantity = () =>
+    setItemCuantity((prev: any) => Math.max(0, prev - 1));
   // Form states
-  const [itemName, setItemName] = useState('');
-  const [itemDescription, setItemDescription] = useState('');
+  const [itemName, setItemName] = useState("");
+  const [itemDescription, setItemDescription] = useState("");
   const [itemCuantity, setItemCuantity] = useState<number>(0);
-  const [itemValue, setItemValue] = useState<any>('');
+  const [itemValue, setItemValue] = useState<any>("");
   const [itemTags, setItemTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState('');
+  const [newTag, setNewTag] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentItem, setCurrentItem] = useState<Item | null>(null);
-  
-  // Bin form states
-  const [binName, setBinName] = useState('');
-  const [binDescription, setBinDescription] = useState('');
-  const [binAddress, setBinAddress] = useState('');
 
-  const [error, setError] = useState('');
+  // Bin form states
+  const [binName, setBinName] = useState("");
+  const [binDescription, setBinDescription] = useState("");
+  const [binAddress, setBinAddress] = useState("");
+
+  const [error, setError] = useState("");
 
   useEffect(() => {
     console.log(error);
     const fetchData = async () => {
       try {
-
         setLoading(true);
 
         await fetchSubscription();
-        setError('');
+        setError("");
 
-        const binDocRef = doc(db, 'bins', id!);
+        const binDocRef = doc(db, "bins", id!);
         const binSnap = await getDoc(binDocRef);
 
         if (!binSnap.exists()) {
-          setError('Bin not found');
+          setError("Bin not found");
           setLoading(false);
           return;
         }
 
-        const binData = binSnap.data() as Omit<BinDetails, 'id'>;
+        const binData = binSnap.data() as Omit<BinDetails, "id">;
         setBin({ id: binSnap.id, ...binData });
 
         const itemsQuery = query(
-          collection(db, 'items'),
-          where('binId', '==', id)
+          collection(db, "items"),
+          where("binId", "==", id)
         );
         const itemsSnap = await getDocs(itemsQuery);
 
         const itemsData = itemsSnap.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         })) as Item[];
 
         setItems(itemsData);
       } catch (err) {
-        console.error('Error fetching bin data:', err);
-        setError('Error fetching bin data');
+        console.error("Error fetching bin data:", err);
+        setError("Error fetching bin data");
       } finally {
         setLoading(false);
       }
@@ -171,17 +204,17 @@ const BinDetailsScreen: React.FC = () => {
   const handleAddTag = () => {
     if (newTag.trim() && !itemTags.includes(newTag.trim())) {
       setItemTags([...itemTags, newTag.trim()]);
-      setNewTag('');
+      setNewTag("");
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setItemTags(itemTags.filter(tag => tag !== tagToRemove));
+    setItemTags(itemTags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleEditItem = (item: any) => {
-    console.log(currentItem)
-    console.log(item)
+    console.log(currentItem);
+    console.log(item);
     setCurrentItem(item);
     setItemName(item.name);
     setItemDescription(item.description);
@@ -215,7 +248,7 @@ const BinDetailsScreen: React.FC = () => {
         description: itemDescription.trim(),
         tags: itemTags,
         value: itemValue?.toString(),
-        cuantity: itemCuantity?.toString()
+        cuantity: itemCuantity?.toString(),
       };
 
       // Si la imagen cambió y hay una imagen anterior
@@ -224,13 +257,15 @@ const BinDetailsScreen: React.FC = () => {
           try {
             const storage = getStorage();
             // Extraer ruta relativa en storage para eliminar
-            const oldImagePath = extractStoragePath(currentItem?.imageUrl ?? null);
+            const oldImagePath = extractStoragePath(
+              currentItem?.imageUrl ?? null
+            );
             if (oldImagePath) {
               const oldImageRef = ref(storage, oldImagePath);
               await deleteObject(oldImageRef);
-              console.log('Old image deleted');
+              console.log("Old image deleted");
             } else {
-              console.warn('No se pudo extraer un path válido de la URL');
+              console.warn("No se pudo extraer un path válido de la URL");
             }
 
             console.log("Old image deleted");
@@ -249,7 +284,9 @@ const BinDetailsScreen: React.FC = () => {
 
       // Actualizar estado local
       setItems((prev) =>
-        prev.map((item) => (item.id === currentItem.id ? { ...item, ...updateData } : item))
+        prev.map((item) =>
+          item.id === currentItem.id ? { ...item, ...updateData } : item
+        )
       );
 
       // Reset form y cerrar modal
@@ -277,8 +314,8 @@ const BinDetailsScreen: React.FC = () => {
   };
 
   const resetItemForm = () => {
-    setItemName('');
-    setItemDescription('');
+    setItemName("");
+    setItemDescription("");
     setItemTags([]);
     setSelectedImage(null);
     setCurrentItem(null);
@@ -340,29 +377,30 @@ const BinDetailsScreen: React.FC = () => {
   };
 
   const handleSubmitItem = async () => {
-
     // Verificar si ya alcanzó el límite
     if (items.length >= Number(subscription?.metadata?.items)) {
-      toast.error(`You have reached the limit of ${subscription?.metadata?.items} items for your plan.`)
+      toast.error(
+        `You have reached the limit of ${subscription?.metadata?.items} items for your plan.`
+      );
       return;
     }
 
     if (!itemName.trim()) {
-      toast.error('Please enter an item name'); // o un alert nativo
+      toast.error("Please enter an item name"); // o un alert nativo
       return;
     }
 
     try {
       let imageUrl: string | null = null;
 
-      console.log(selectedFile, " archivo")
+      console.log(selectedFile, " archivo");
       if (selectedFile) {
         try {
           imageUrl = await uploadImage(selectedFile);
         } catch (uploadError) {
-          console.error('Error uploading image:', uploadError);
+          console.error("Error uploading image:", uploadError);
           const proceed = window.confirm(
-            'Image upload failed. Do you want to continue without an image?'
+            "Image upload failed. Do you want to continue without an image?"
           );
           if (!proceed) {
             //setIsUploading(false);
@@ -373,8 +411,8 @@ const BinDetailsScreen: React.FC = () => {
 
       await createItem(imageUrl);
     } catch (error) {
-      console.error('Error adding item:', error);
-      toast.error('Failed to add item');
+      console.error("Error adding item:", error);
+      toast.error("Failed to add item");
     } finally {
       //setIsUploading(false);
     }
@@ -391,17 +429,17 @@ const BinDetailsScreen: React.FC = () => {
         createdAt: new Date().toISOString(),
         binId: id,
         userId: currentUser?.uid,
-        ...(imageUrl && { imageUrl })
+        ...(imageUrl && { imageUrl }),
       };
 
-      const docRef = await addDoc(collection(db, 'items'), itemData);
+      const docRef = await addDoc(collection(db, "items"), itemData);
       const newItem = { id: docRef.id, ...itemData };
-      
+
       setItems((prevItems: any) => [...prevItems, newItem]);
       setIsAddItemOpen(false);
       resetItemForm();
-      
-      toast.success('Item added successfully'); 
+
+      toast.success("Item added successfully");
     } catch (error) {
       console.log(error);
     }
@@ -409,14 +447,14 @@ const BinDetailsScreen: React.FC = () => {
 
   const handleUpdateBin = async () => {
     // aquí va tu lógica de update en Firestore…
-  }
+  };
 
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setIsUploading(false);
-  }, [])
+  }, []);
 
   if (loading) {
     return (
@@ -436,7 +474,7 @@ const BinDetailsScreen: React.FC = () => {
           <Package className="h-16 w-16 text-gray-400 mx-auto" />
           <h2 className="text-xl font-semibold text-gray-900">Bin not found</h2>
           <p className="text-gray-600">The requested bin could not be found.</p>
-          <Button onClick={() => navigate('/')} variant="outline">
+          <Button onClick={() => navigate("/")} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go Back
           </Button>
@@ -452,22 +490,26 @@ const BinDetailsScreen: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/')}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
                 className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-xl font-semibold text-slate-900">Bin Details</h1>
-                <p className="text-xs text-slate-500">Manage your storage bin</p>
+                <h1 className="text-xl font-semibold text-slate-900">
+                  Bin Details
+                </h1>
+                <p className="text-xs text-slate-500">
+                  Manage your storage bin
+                </p>
               </div>
             </div>
-            <Button 
-              onClick={() => navigate('/')} 
-              variant="outline" 
+            <Button
+              onClick={() => navigate("/")}
+              variant="outline"
               size="sm"
               className="rounded-xl border-slate-300 hover:bg-slate-50"
             >
@@ -485,8 +527,12 @@ const BinDetailsScreen: React.FC = () => {
             <CardHeader className="pb-6 pt-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-3 flex-1">
-                  <h2 className="text-3xl font-bold text-slate-900">{bin.name}</h2>
-                  <p className="text-slate-600 text-lg leading-relaxed">{bin.description}</p>
+                  <h2 className="text-3xl font-bold text-slate-900">
+                    {bin.name}
+                  </h2>
+                  <p className="text-slate-600 text-lg leading-relaxed">
+                    {bin.description}
+                  </p>
                   <div className="flex flex-wrap gap-4 pt-2">
                     {bin.location && (
                       <div className="flex items-center text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
@@ -500,9 +546,9 @@ const BinDetailsScreen: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleEditBin}
                   className="shrink-0 rounded-xl border-slate-300 hover:bg-slate-50 shadow-sm"
                 >
@@ -524,22 +570,26 @@ const BinDetailsScreen: React.FC = () => {
               </DialogTrigger>
               <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
                 <DialogHeader className="pb-6">
-                  <DialogTitle className="text-2xl font-bold text-slate-900">Add New Item</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold text-slate-900">
+                    Add New Item
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6">
                   {/* Image Upload */}
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium text-slate-700">Image</Label>
+                    <Label className="text-sm font-medium text-slate-700">
+                      Image
+                    </Label>
                     <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200">
                       {selectedImage ? (
                         <div className="space-y-4">
-                          <img 
-                            src={selectedImage} 
-                            alt="Preview" 
+                          <img
+                            src={selectedImage}
+                            alt="Preview"
                             className="max-w-full h-32 object-cover rounded-xl mx-auto shadow-sm"
                           />
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setSelectedImage(null)}
                             className="rounded-xl"
@@ -569,7 +619,12 @@ const BinDetailsScreen: React.FC = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="itemName" className="text-sm font-medium text-slate-700">Name *</Label>
+                    <Label
+                      htmlFor="itemName"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Name *
+                    </Label>
                     <Input
                       id="itemName"
                       value={itemName}
@@ -580,7 +635,12 @@ const BinDetailsScreen: React.FC = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="itemDescription" className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label
+                      htmlFor="itemDescription"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Description
+                    </Label>
                     <Textarea
                       id="itemDescription"
                       value={itemDescription}
@@ -593,11 +653,16 @@ const BinDetailsScreen: React.FC = () => {
 
                   {/* Cantidad */}
                   <div className="space-y-3">
-                    <Label htmlFor="itemQuantity" className="text-sm font-medium text-slate-700">Quantity</Label>
+                    <Label
+                      htmlFor="itemQuantity"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Quantity
+                    </Label>
                     <div className="flex items-center space-x-3">
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={decrementQuantity}
                         className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
                       >
@@ -608,12 +673,14 @@ const BinDetailsScreen: React.FC = () => {
                         type="number"
                         min={0}
                         value={itemCuantity}
-                        onChange={(e) => setItemCuantity(Number(e.target.value))}
+                        onChange={(e) =>
+                          setItemCuantity(Number(e.target.value))
+                        }
                         className="w-20 text-center rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                       />
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={incrementQuantity}
                         className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
                       >
@@ -624,7 +691,12 @@ const BinDetailsScreen: React.FC = () => {
 
                   {/* Valor */}
                   <div className="space-y-3">
-                    <Label htmlFor="itemValue" className="text-sm font-medium text-slate-700">Value</Label>
+                    <Label
+                      htmlFor="itemValue"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Value
+                    </Label>
                     <Input
                       id="itemValue"
                       type="number"
@@ -638,17 +710,19 @@ const BinDetailsScreen: React.FC = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium text-slate-700">Tags</Label>
+                    <Label className="text-sm font-medium text-slate-700">
+                      Tags
+                    </Label>
                     <div className="flex space-x-2">
                       <Input
                         value={newTag}
                         onChange={(e) => setNewTag(e.target.value)}
                         placeholder="Add a tag"
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                        onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                         className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                       />
-                      <Button 
-                        onClick={handleAddTag} 
+                      <Button
+                        onClick={handleAddTag}
                         size="sm"
                         className="rounded-xl"
                       >
@@ -658,7 +732,11 @@ const BinDetailsScreen: React.FC = () => {
                     {itemTags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
                         {itemTags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="pr-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="pr-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200"
+                          >
                             {tag}
                             <button
                               onClick={() => handleRemoveTag(tag)}
@@ -673,8 +751,8 @@ const BinDetailsScreen: React.FC = () => {
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-6">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setIsAddItemOpen(false);
                         resetItemForm();
@@ -683,8 +761,8 @@ const BinDetailsScreen: React.FC = () => {
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      onClick={() => handleSubmitItem()} 
+                    <Button
+                      onClick={() => handleSubmitItem()}
                       disabled={!itemName.trim()}
                       className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                     >
@@ -697,8 +775,8 @@ const BinDetailsScreen: React.FC = () => {
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   className="flex-1 sm:flex-none rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -707,13 +785,18 @@ const BinDetailsScreen: React.FC = () => {
               </AlertDialogTrigger>
               <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
                 <AlertDialogHeader>
-                  <AlertDialogTitle className="text-xl font-bold text-slate-900">Delete Bin</AlertDialogTitle>
+                  <AlertDialogTitle className="text-xl font-bold text-slate-900">
+                    Delete Bin
+                  </AlertDialogTitle>
                   <AlertDialogDescription className="text-slate-600">
-                    Are you sure you want to delete this bin? This action cannot be undone and will also delete all items in this bin.
+                    Are you sure you want to delete this bin? This action cannot
+                    be undone and will also delete all items in this bin.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-xl border-slate-300 hover:bg-slate-50">Cancel</AlertDialogCancel>
+                  <AlertDialogCancel className="rounded-xl border-slate-300 hover:bg-slate-50">
+                    Cancel
+                  </AlertDialogCancel>
                   <AlertDialogAction className="bg-red-600 hover:bg-red-700 rounded-xl">
                     Delete
                   </AlertDialogAction>
@@ -736,9 +819,13 @@ const BinDetailsScreen: React.FC = () => {
                   <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Package className="h-10 w-10 text-blue-500" />
                   </div>
-                  <h4 className="text-xl font-semibold text-slate-900 mb-3">No items yet</h4>
-                  <p className="text-slate-500 mb-6 max-w-md mx-auto">Add your first item to get started organizing your bin</p>
-                  <Button 
+                  <h4 className="text-xl font-semibold text-slate-900 mb-3">
+                    No items yet
+                  </h4>
+                  <p className="text-slate-500 mb-6 max-w-md mx-auto">
+                    Add your first item to get started organizing your bin
+                  </p>
+                  <Button
                     onClick={() => setIsAddItemOpen(true)}
                     className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
                   >
@@ -750,8 +837,11 @@ const BinDetailsScreen: React.FC = () => {
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {items.map((item) => (
-                  <Card key={item.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 rounded-2xl border-0 bg-white/70 backdrop-blur-sm group">
-                    <div 
+                  <Card
+                    key={item.id}
+                    className="overflow-hidden hover:shadow-xl transition-all duration-300 rounded-2xl border-0 bg-white/70 backdrop-blur-sm group"
+                  >
+                    <div
                       className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden group cursor-pointer"
                       onClick={() => {
                         if (item.imageUrl) {
@@ -762,8 +852,8 @@ const BinDetailsScreen: React.FC = () => {
                     >
                       {item.imageUrl ? (
                         <>
-                          <img 
-                            src={item.imageUrl} 
+                          <img
+                            src={item.imageUrl}
                             alt={item.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -783,7 +873,7 @@ const BinDetailsScreen: React.FC = () => {
                               <circle cx="12" cy="12" r="3" />
                             </svg>
                           </div>
-                          </>
+                        </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageIcon className="h-12 w-12 text-slate-400" />
@@ -793,11 +883,13 @@ const BinDetailsScreen: React.FC = () => {
                     </div>
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-semibold text-slate-900 truncate flex-1 text-lg">{item.name}</h4>
+                        <h4 className="font-semibold text-slate-900 truncate flex-1 text-lg">
+                          {item.name}
+                        </h4>
                         <div className="flex space-x-1 ml-3">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleEditItem(item)}
                             className="p-2 h-8 w-8 rounded-lg hover:bg-slate-100"
                           >
@@ -805,8 +897,8 @@ const BinDetailsScreen: React.FC = () => {
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 className="p-2 h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
                               >
@@ -815,13 +907,18 @@ const BinDetailsScreen: React.FC = () => {
                             </AlertDialogTrigger>
                             <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
                               <AlertDialogHeader>
-                                <AlertDialogTitle className="text-xl font-bold text-slate-900">Delete Item</AlertDialogTitle>
+                                <AlertDialogTitle className="text-xl font-bold text-slate-900">
+                                  Delete Item
+                                </AlertDialogTitle>
                                 <AlertDialogDescription className="text-slate-600">
-                                  Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                                  Are you sure you want to delete "{item.name}"?
+                                  This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel className="rounded-xl border-slate-300 hover:bg-slate-50">Cancel</AlertDialogCancel>
+                                <AlertDialogCancel className="rounded-xl border-slate-300 hover:bg-slate-50">
+                                  Cancel
+                                </AlertDialogCancel>
                                 <AlertDialogAction className="bg-red-600 hover:bg-red-700 rounded-xl">
                                   Delete
                                 </AlertDialogAction>
@@ -830,13 +927,19 @@ const BinDetailsScreen: React.FC = () => {
                           </AlertDialog>
                         </div>
                       </div>
-                      
-                      <p className="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
-                      
+
+                      <p className="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
+
                       {item.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {item.tags.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs rounded-full border-slate-300 text-slate-600 hover:bg-slate-50">
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-xs rounded-full border-slate-300 text-slate-600 hover:bg-slate-50"
+                            >
                               {tag}
                             </Badge>
                           ))}
@@ -859,7 +962,7 @@ const BinDetailsScreen: React.FC = () => {
               className="relative w-full h-full cursor-move"
               onMouseDown={(e) => {
                 const container = e.currentTarget;
-                const img = container.querySelector('img');
+                const img = container.querySelector("img");
                 if (!img || zoomLevel <= 1) return;
 
                 const startX = e.clientX - container.offsetLeft;
@@ -877,19 +980,22 @@ const BinDetailsScreen: React.FC = () => {
                 };
 
                 const handleMouseUp = () => {
-                  document.removeEventListener('mousemove', handleMouseMove);
-                  document.removeEventListener('mouseup', handleMouseUp);
+                  document.removeEventListener("mousemove", handleMouseMove);
+                  document.removeEventListener("mouseup", handleMouseUp);
                 };
 
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
+                document.addEventListener("mousemove", handleMouseMove);
+                document.addEventListener("mouseup", handleMouseUp);
               }}
-              style={{ overflow: zoomLevel > 1 ? 'auto' : 'hidden' }}
+              style={{ overflow: zoomLevel > 1 ? "auto" : "hidden" }}
             >
               <img
-                src={selectedModalImage || ''}
+                src={selectedModalImage || ""}
                 alt="Full size image"
-                style={{ transform: `scale(${zoomLevel})`, transformOrigin: '0 0' }}
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  transformOrigin: "0 0",
+                }}
                 className="w-full h-full object-contain transition-transform duration-300"
                 draggable="false"
               />
@@ -928,22 +1034,26 @@ const BinDetailsScreen: React.FC = () => {
       <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
           <DialogHeader className="pb-6">
-            <DialogTitle className="text-2xl font-bold text-slate-900">Edit Item</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-slate-900">
+              Edit Item
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             {/* Similar form as Add Item but with update functionality */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700">Image</Label>
+              <Label className="text-sm font-medium text-slate-700">
+                Image
+              </Label>
               <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200">
                 {selectedImage ? (
                   <div className="space-y-4">
-                    <img 
-                      src={selectedImage} 
-                      alt="Preview" 
+                    <img
+                      src={selectedImage}
+                      alt="Preview"
                       className="max-w-full h-32 object-cover rounded-xl mx-auto shadow-sm"
                     />
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setSelectedImage(null)}
                       className="rounded-xl"
@@ -973,7 +1083,12 @@ const BinDetailsScreen: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="editItemName" className="text-sm font-medium text-slate-700">Name *</Label>
+              <Label
+                htmlFor="editItemName"
+                className="text-sm font-medium text-slate-700"
+              >
+                Name *
+              </Label>
               <Input
                 id="editItemName"
                 value={itemName}
@@ -984,7 +1099,12 @@ const BinDetailsScreen: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="editItemDescription" className="text-sm font-medium text-slate-700">Description</Label>
+              <Label
+                htmlFor="editItemDescription"
+                className="text-sm font-medium text-slate-700"
+              >
+                Description
+              </Label>
               <Textarea
                 id="editItemDescription"
                 value={itemDescription}
@@ -997,11 +1117,16 @@ const BinDetailsScreen: React.FC = () => {
 
             {/* Cantidad */}
             <div className="space-y-3">
-              <Label htmlFor="itemQuantity" className="text-sm font-medium text-slate-700">Quantity</Label>
+              <Label
+                htmlFor="itemQuantity"
+                className="text-sm font-medium text-slate-700"
+              >
+                Quantity
+              </Label>
               <div className="flex items-center space-x-3">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={decrementQuantity}
                   className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
                 >
@@ -1015,9 +1140,9 @@ const BinDetailsScreen: React.FC = () => {
                   onChange={(e) => setItemCuantity(Number(e.target.value))}
                   className="w-20 text-center rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                 />
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={incrementQuantity}
                   className="rounded-xl h-10 w-10 border-slate-300 hover:bg-slate-50"
                 >
@@ -1028,7 +1153,12 @@ const BinDetailsScreen: React.FC = () => {
 
             {/* Valor */}
             <div className="space-y-3">
-              <Label htmlFor="itemValue" className="text-sm font-medium text-slate-700">Value</Label>
+              <Label
+                htmlFor="itemValue"
+                className="text-sm font-medium text-slate-700"
+              >
+                Value
+              </Label>
               <Input
                 id="itemValue"
                 type="number"
@@ -1048,21 +1178,21 @@ const BinDetailsScreen: React.FC = () => {
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   placeholder="Add a tag"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                   className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
                 />
-                <Button 
-                  onClick={handleAddTag} 
-                  size="sm"
-                  className="rounded-xl"
-                >
+                <Button onClick={handleAddTag} size="sm" className="rounded-xl">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               {itemTags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {itemTags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="pr-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200">
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="pr-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200"
+                    >
                       {tag}
                       <button
                         onClick={() => handleRemoveTag(tag)}
@@ -1077,8 +1207,8 @@ const BinDetailsScreen: React.FC = () => {
             </div>
 
             <div className="flex justify-end space-x-3 pt-6">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setIsEditItemOpen(false);
                   resetItemForm();
@@ -1087,8 +1217,8 @@ const BinDetailsScreen: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={() => handleUpdateItem()} 
+              <Button
+                onClick={() => handleUpdateItem()}
                 disabled={!itemName.trim()}
                 className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
               >
@@ -1103,12 +1233,19 @@ const BinDetailsScreen: React.FC = () => {
       <Dialog open={isEditBinOpen} onOpenChange={setIsEditBinOpen}>
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
           <DialogHeader className="pb-6">
-            <DialogTitle className="text-2xl font-bold text-slate-900">Edit Bin</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-slate-900">
+              Edit Bin
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             {/* Name */}
             <div className="space-y-3">
-              <Label htmlFor="binName" className="text-sm font-medium text-slate-700">Name *</Label>
+              <Label
+                htmlFor="binName"
+                className="text-sm font-medium text-slate-700"
+              >
+                Name *
+              </Label>
               <Input
                 id="binName"
                 value={binName}
@@ -1120,7 +1257,12 @@ const BinDetailsScreen: React.FC = () => {
 
             {/* Description */}
             <div className="space-y-3">
-              <Label htmlFor="binDescription" className="text-sm font-medium text-slate-700">Description</Label>
+              <Label
+                htmlFor="binDescription"
+                className="text-sm font-medium text-slate-700"
+              >
+                Description
+              </Label>
               <Textarea
                 id="binDescription"
                 value={binDescription}
@@ -1133,7 +1275,12 @@ const BinDetailsScreen: React.FC = () => {
 
             {/* Address */}
             <div className="space-y-3">
-              <Label htmlFor="binAddress" className="text-sm font-medium text-slate-700">Address</Label>
+              <Label
+                htmlFor="binAddress"
+                className="text-sm font-medium text-slate-700"
+              >
+                Address
+              </Label>
               <Input
                 id="binAddress"
                 value={binAddress}
@@ -1145,10 +1292,13 @@ const BinDetailsScreen: React.FC = () => {
 
             {/* Location */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-700">Location {!selectedLocation && <span className="text-red-500">*</span>}</Label>
+              <Label className="text-sm font-medium text-slate-700">
+                Location{" "}
+                {!selectedLocation && <span className="text-red-500">*</span>}
+              </Label>
               {!selectedLocation ? (
                 <>
-                {/*
+                  {/*
                 <Button 
                   variant="outline" 
                   onClick={() => {}}
@@ -1169,7 +1319,9 @@ const BinDetailsScreen: React.FC = () => {
                   </Button>*/}
                   <div className="inline-flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-full border border-blue-200">
                     <MapPin className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm text-blue-700 font-medium">{selectedLocation?.name}</span>
+                    <span className="text-sm text-blue-700 font-medium">
+                      {selectedLocation?.name}
+                    </span>
                   </div>
                 </div>
               )}
@@ -1177,8 +1329,8 @@ const BinDetailsScreen: React.FC = () => {
 
             {/* Actions */}
             <div className="flex justify-end space-x-3 pt-6">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsEditBinOpen(false)}
                 className="rounded-xl border-slate-300 hover:bg-slate-50"
               >
@@ -1195,7 +1347,7 @@ const BinDetailsScreen: React.FC = () => {
                     <span>Updating...</span>
                   </span>
                 ) : (
-                  'Update Bin'
+                  "Update Bin"
                 )}
               </Button>
             </div>

@@ -89,10 +89,10 @@ export const LocationsManager = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const [totalLocations, setTotalLocations] = useState(0);
 
-   // Auth & impersonation
+  // Auth & impersonation
   const { currentUser } = useAuth();
-  const [userImpersonated, setUserImpersonated] = useState<any>(
-    () => JSON.parse(localStorage.getItem('impersonatedUser') || 'null')
+  const [userImpersonated, setUserImpersonated] = useState<any>(() =>
+    JSON.parse(localStorage.getItem("impersonatedUser") || "null")
   );
   const effectiveUserId = userImpersonated?.ownerUserId || currentUser?.uid;
 
@@ -143,7 +143,7 @@ export const LocationsManager = () => {
   };
 
   const clearImpersonation = () => {
-    localStorage.removeItem('impersonatedUser');
+    localStorage.removeItem("impersonatedUser");
     setUserImpersonated(null);
   };
 
@@ -484,13 +484,14 @@ export const LocationsManager = () => {
         <div className="bg-gray-50 border-b border-gray-200">
           <div className="container mx-auto px-6 py-2 max-w-7xl flex items-center justify-end space-x-4">
             <span className="text-sm text-gray-500">
-              {t('dashboard.by')} <strong>{userImpersonated?.ownerUsername}</strong>
+              {t("dashboard.by")}{" "}
+              <strong>{userImpersonated?.ownerUsername}</strong>
             </span>
             <button
               onClick={clearImpersonation}
               className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors duration-200"
             >
-              {t('dashboard.stopImpersonation')}
+              {t("dashboard.stopImpersonation")}
             </button>
           </div>
         </div>

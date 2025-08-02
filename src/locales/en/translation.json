@@ -73,7 +73,9 @@
     "modal": {
       "newTitle": "New Location",
       "editTitle": "Edit Location"
-    }
+    },
+    "badge": "Location",
+    "selected": "Selected"
   },
   "form": {
     "name": "Name",

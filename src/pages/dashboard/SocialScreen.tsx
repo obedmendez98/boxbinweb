@@ -5,8 +5,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { ChevronRight, Loader2, Mail, Plus, Search, Share2, Shield, Trash2, UserCheck, Users, X } from "lucide-react";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
+import {
+  ChevronRight,
+  Loader2,
+  Mail,
+  Plus,
+  Search,
+  Share2,
+  Shield,
+  Trash2,
+  UserCheck,
+  Users,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +42,7 @@ export default function SocialScreen() {
   const [sharedByMeAccounts, setSharedByMeAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -29,56 +50,65 @@ export default function SocialScreen() {
 
     // Listen for accounts shared with me
     const sharedWithMeQuery = query(
-      collection(db, 'shared_access'),
-      where('grantedUserId', '==', currentUser.uid)
+      collection(db, "shared_access"),
+      where("grantedUserId", "==", currentUser.uid)
     );
 
     // Listen for accounts I've shared with others
     const sharedByMeQuery = query(
-      collection(db, 'shared_access'),
-      where('ownerUserId', '==', currentUser.uid)
+      collection(db, "shared_access"),
+      where("ownerUserId", "==", currentUser.uid)
     );
 
-    const unsubscribeSharedWithMe = onSnapshot(sharedWithMeQuery, async (snapshot) => {
-      const sharedData = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const userDoc = await getDocs(
-          query(collection(db, 'users'), where('uid', '==', data.ownerUserId))
-        );
-        if (!userDoc.empty) {
-          const userData = userDoc.docs[0].data();
-          sharedData.push({
-            id: doc.id,
-            ...data,
-            ownerUsername: userData.username,
-            ownerDisplayName: userData.displayName || userData.username
-          });
+    const unsubscribeSharedWithMe = onSnapshot(
+      sharedWithMeQuery,
+      async (snapshot) => {
+        const sharedData = [];
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          const userDoc = await getDocs(
+            query(collection(db, "users"), where("uid", "==", data.ownerUserId))
+          );
+          if (!userDoc.empty) {
+            const userData = userDoc.docs[0].data();
+            sharedData.push({
+              id: doc.id,
+              ...data,
+              ownerUsername: userData.username,
+              ownerDisplayName: userData.displayName || userData.username,
+            });
+          }
         }
+        setSharedAccounts(sharedData);
       }
-      setSharedAccounts(sharedData);
-    });
+    );
 
-    const unsubscribeSharedByMe = onSnapshot(sharedByMeQuery, async (snapshot) => {
-      const sharedData: any = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const userDoc = await getDocs(
-          query(collection(db, 'users'), where('uid', '==', data.grantedUserId))
-        );
-        if (!userDoc.empty) {
-          const userData = userDoc.docs[0].data();
-          sharedData.push({
-            id: doc.id,
-            ...data,
-            grantedUsername: userData.username,
-            grantedDisplayName: userData.displayName || userData.username
-          });
+    const unsubscribeSharedByMe = onSnapshot(
+      sharedByMeQuery,
+      async (snapshot) => {
+        const sharedData: any = [];
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          const userDoc = await getDocs(
+            query(
+              collection(db, "users"),
+              where("uid", "==", data.grantedUserId)
+            )
+          );
+          if (!userDoc.empty) {
+            const userData = userDoc.docs[0].data();
+            sharedData.push({
+              id: doc.id,
+              ...data,
+              grantedUsername: userData.username,
+              grantedDisplayName: userData.displayName || userData.username,
+            });
+          }
         }
+        setSharedByMeAccounts(sharedData);
+        setLoading(false);
       }
-      setSharedByMeAccounts(sharedData);
-      setLoading(false);
-    });
+    );
 
     return () => {
       unsubscribeSharedWithMe();
@@ -88,24 +118,26 @@ export default function SocialScreen() {
 
   const handleShare = async () => {
     if (!username.trim()) {
-      alert(t('social.errors.emptyUsername'));
+      alert(t("social.errors.emptyUsername"));
       return;
     }
 
     setIsProcessing(true);
     try {
-
       if (!currentUser) return;
 
       // Find user by username
-      const usersRef = collection(db, 'users');
-      const userQuery = query(usersRef, where('username', '==', username.trim()));
+      const usersRef = collection(db, "users");
+      const userQuery = query(
+        usersRef,
+        where("username", "==", username.trim())
+      );
       const userSnapshot = await getDocs(userQuery);
 
       if (userSnapshot.empty) {
-        alert(t('social.errors.userNotFound'));
+        alert(t("social.errors.userNotFound"));
         setIsProcessing(false);
-        setUsername('');
+        setUsername("");
         setIsModalVisible(false);
         return;
       }
@@ -115,31 +147,31 @@ export default function SocialScreen() {
       // Check if access has already been granted
       const existingAccess = await getDocs(
         query(
-          collection(db, 'shared_access'),
-          where('ownerUserId', '==', currentUser.uid),
-          where('grantedUserId', '==', targetUser.uid)
+          collection(db, "shared_access"),
+          where("ownerUserId", "==", currentUser.uid),
+          where("grantedUserId", "==", targetUser.uid)
         )
       );
 
       if (!existingAccess.empty) {
-        alert(t('social.alreadyShared.message'));
+        alert(t("social.alreadyShared.message"));
         setIsProcessing(false);
         return;
       }
 
       // Grant access
-      await addDoc(collection(db, 'shared_access'), {
+      await addDoc(collection(db, "shared_access"), {
         ownerUserId: currentUser.uid,
         grantedUserId: targetUser.uid,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
 
-      setUsername('');
+      setUsername("");
       setIsModalVisible(false);
-      alert(t('social.success.message'));
+      alert(t("social.success.message"));
     } catch (error) {
-      console.error('Error granting access:', error);
-      alert(t('social.errors.grantFailed'));
+      console.error("Error granting access:", error);
+      alert(t("social.errors.grantFailed"));
     } finally {
       setIsProcessing(false);
     }
@@ -147,22 +179,22 @@ export default function SocialScreen() {
 
   const viewSharedInventory = (sharedAccount: any) => {
     // Guardar en localStorage en lugar de usar setImpersonatedUser
-    localStorage.setItem('impersonatedUser', JSON.stringify(sharedAccount));
-    console.log('Usuario a impersonar:', sharedAccount);
+    localStorage.setItem("impersonatedUser", JSON.stringify(sharedAccount));
+    console.log("Usuario a impersonar:", sharedAccount);
     navigate(`/home`);
   };
 
   const handleRevokeAccess = async (accountId: any, accountName: any) => {
     const confirmRevoke = window.confirm(
-      t('shareAccess.revokeMessage', { name: accountName })
+      t("shareAccess.revokeMessage", { name: accountName })
     );
-    
+
     if (confirmRevoke) {
       try {
-        await deleteDoc(doc(db, 'shared_access', accountId));
+        await deleteDoc(doc(db, "shared_access", accountId));
       } catch (error) {
-        console.error('Error revoking access:', error);
-        alert(t('social.errors.revokeFailed'));
+        console.error("Error revoking access:", error);
+        alert(t("social.errors.revokeFailed"));
       }
     }
   };
@@ -187,10 +219,10 @@ export default function SocialScreen() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  {t('shareAccess.title')}
+                  {t("shareAccess.title")}
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {t('shareAccess.subtitle')}
+                  {t("shareAccess.subtitle")}
                 </p>
               </div>
             </div>
@@ -200,7 +232,7 @@ export default function SocialScreen() {
               size="lg"
             >
               <Plus className="w-5 h-5 mr-2" />
-              {t('shareAccess.addNew')}
+              {t("shareAccess.addNew")}
             </Button>
           </div>
         </div>
@@ -215,9 +247,12 @@ export default function SocialScreen() {
                 <UserCheck className="w-5 h-5 text-white" />
               </div>
               <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                {t('shareAccess.sharedWithMe')}
+                {t("shareAccess.sharedWithMe")}
               </span>
-              <Badge variant="secondary" className="ml-auto bg-emerald-100 text-emerald-800 hover:bg-emerald-200">
+              <Badge
+                variant="secondary"
+                className="ml-auto bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+              >
                 {sharedAccounts.length}
               </Badge>
             </CardTitle>
@@ -241,14 +276,16 @@ export default function SocialScreen() {
                         {account.ownerDisplayName}
                       </h3>
                       <p className="text-sm text-gray-500 flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        @{account.ownerUsername}
+                        <Mail className="w-3 h-3" />@{account.ownerUsername}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <Badge
+                        variant="outline"
+                        className="bg-green-50 text-green-700 border-green-200"
+                      >
                         <Shield className="w-3 h-3 mr-1" />
-                        {t('shareAccess.active')}
+                        {t("shareAccess.active")}
                       </Badge>
                       <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     </div>
@@ -260,8 +297,12 @@ export default function SocialScreen() {
                 <div className="w-16 h-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
                   <UserCheck className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-500 text-lg">{t('shareAccess.noAccountsSharedWithYou')}</p>
-                <p className="text-gray-400 text-sm mt-2">{t('shareAccess.subtitle2')}</p>
+                <p className="text-gray-500 text-lg">
+                  {t("shareAccess.noAccountsSharedWithYou")}
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  {t("shareAccess.subtitle2")}
+                </p>
               </div>
             )}
           </CardContent>
@@ -275,9 +316,12 @@ export default function SocialScreen() {
                 <Users className="w-5 h-5 text-white" />
               </div>
               <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                {t('shareAccess.sharedByMe')}
+                {t("shareAccess.sharedByMe")}
               </span>
-              <Badge variant="secondary" className="ml-auto bg-purple-100 text-purple-800 hover:bg-purple-200">
+              <Badge
+                variant="secondary"
+                className="ml-auto bg-purple-100 text-purple-800 hover:bg-purple-200"
+              >
                 {sharedByMeAccounts.length}
               </Badge>
             </CardTitle>
@@ -300,19 +344,26 @@ export default function SocialScreen() {
                         {account.grantedDisplayName}
                       </h3>
                       <p className="text-sm text-gray-500 flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        @{account.grantedUsername}
+                        <Mail className="w-3 h-3" />@{account.grantedUsername}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      <Badge
+                        variant="outline"
+                        className="bg-blue-50 text-blue-700 border-blue-200"
+                      >
                         <Shield className="w-3 h-3 mr-1" />
-                        {t('shareAccess.shared')}
+                        {t("shareAccess.shared")}
                       </Badge>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRevokeAccess(account.id, account.grantedDisplayName)}
+                        onClick={() =>
+                          handleRevokeAccess(
+                            account.id,
+                            account.grantedDisplayName
+                          )
+                        }
                         className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-all duration-300"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -326,8 +377,12 @@ export default function SocialScreen() {
                 <div className="w-16 h-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-500 text-lg">{t('shareAccess.noAccountsSharedByYou')}</p>
-                <p className="text-gray-400 text-sm mt-2">{t('shareAccess.shared2')}</p>
+                <p className="text-gray-500 text-lg">
+                  {t("shareAccess.noAccountsSharedByYou")}
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  {t("shareAccess.shared2")}
+                </p>
               </div>
             )}
           </CardContent>
@@ -344,13 +399,15 @@ export default function SocialScreen() {
                   <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
                     <Share2 className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">{t('shareAccess.title')}</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {t("shareAccess.title")}
+                  </h3>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setUsername('');
+                    setUsername("");
                     setIsModalVisible(false);
                   }}
                   className="text-gray-400 hover:text-gray-600 p-2"
@@ -359,11 +416,11 @@ export default function SocialScreen() {
                 </Button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
-                  {t('shareAccess.user')}
+                  {t("shareAccess.user")}
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -371,7 +428,7 @@ export default function SocialScreen() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder={t('shareAccess.inputPlaceholder')}
+                    placeholder={t("shareAccess.inputPlaceholder")}
                     className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
                   />
                 </div>
@@ -381,12 +438,12 @@ export default function SocialScreen() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setUsername('');
+                    setUsername("");
                     setIsModalVisible(false);
                   }}
                   className="flex-1 h-12 border-gray-200 hover:bg-gray-50"
                 >
-                  {t('shareAccess.cancel')}
+                  {t("shareAccess.cancel")}
                 </Button>
                 <Button
                   onClick={handleShare}
@@ -396,12 +453,12 @@ export default function SocialScreen() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('shareAccess.pro')}
+                      {t("shareAccess.pro")}
                     </>
                   ) : (
                     <>
                       <Share2 className="w-4 h-4 mr-2" />
-                      {t('shareAccess.share')}
+                      {t("shareAccess.share")}
                     </>
                   )}
                 </Button>

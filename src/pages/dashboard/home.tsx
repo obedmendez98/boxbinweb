@@ -90,8 +90,8 @@ export default function HomeScreen() {
     title?: string;
   }>({
     isOpen: false,
-    type: 'info',
-    message: ''
+    type: "info",
+    message: "",
   });
 
   const openModal = (type: ModalType, message: string, title?: string) => {
@@ -99,12 +99,12 @@ export default function HomeScreen() {
       isOpen: true,
       type,
       message,
-      title
+      title,
     });
   };
 
   const closeModal = () => {
-    setModalState(prev => ({ ...prev, isOpen: false }));
+    setModalState((prev) => ({ ...prev, isOpen: false }));
   };
 
   // Auth & impersonation
@@ -602,13 +602,13 @@ export default function HomeScreen() {
         ...binData,
         createdAt: new Date().toISOString(),
         userId: effectiveUserId,
-        location: binData?.location ?? ""
+        location: binData?.location ?? "",
       };
 
       const docRef = await addDoc(collection(db, "bins"), newBin);
       console.log("Bin created with ID:", docRef.id);
 
-      openModal("success", "Bin created successfully!", "")
+      openModal("success", "Bin created successfully!", "");
 
       await fetchBins();
     } catch (error: any) {
@@ -942,12 +942,12 @@ export default function HomeScreen() {
       />
 
       <ModalMessage
-    isOpen={modalState.isOpen}
+        isOpen={modalState.isOpen}
         onClose={closeModal}
         type={modalState.type}
         message={modalState.message}
         title={modalState.title}
-/>
+      />
     </div>
   );
 }

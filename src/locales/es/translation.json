@@ -73,7 +73,9 @@
     "modal": {
       "newTitle": "Nueva Ubicación",
       "editTitle": "Editar Ubicación"
-    }
+    },
+    "badge": "Ubicación",
+    "selected": "Seleccionada"
   },
   "form": {
     "name": "Nombre",
