@@ -38,7 +38,7 @@ export const Step1 = ({ qrCount, setQrCount, onGenerate }: Step1Props) => {
 
     try {
       // Store QR codes in Firestore
-      const smartLabelsCollection = collection(db, 'smartlabels');
+      const smartLabelsCollection = collection(db, 'qrcodes');
       for (let i = 0; i < qrCount; i++) {
         await addDoc(smartLabelsCollection, {
           dateCreated: serverTimestamp(),

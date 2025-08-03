@@ -113,7 +113,7 @@ export const SmartLabelsPage = () => {
       if (!currentUser) return;
       setIsLoading(true);
 
-      const labelsRef = collection(db, "smartlabels");
+      const labelsRef = collection(db, "qrcodes");
       const q = query(labelsRef, where("userId", "==", currentUser.uid));
       const querySnapshot = await getDocs(q);
 
@@ -121,7 +121,6 @@ export const SmartLabelsPage = () => {
         const data = doc.data();
         return {
           dateCreated: data.dateCreated,
-          field: data.field,
           guid: data.guid || doc.id,
           isUsed: data.isUsed,
           order_key: data.order_key,
@@ -170,7 +169,7 @@ export const SmartLabelsPage = () => {
           userId: currentUser.uid,
         };
 
-        const docRef = doc(collection(db, "smartlabels"));
+        const docRef = doc(collection(db, "qrcodes"));
         batch.set(docRef, labelData);
       }
 
