@@ -349,7 +349,7 @@ export default function BillingPage() {
                             )}
                             {plan.metadata?.items && (
                               <p>
-                                📦 Items:{" "}
+                                📦 Max items (Per Bin):{" "}
                                 <span className="font-semibold">
                                   {plan.metadata.items}
                                 </span>
