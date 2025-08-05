@@ -15,7 +15,7 @@ export default function ExportInventory() {
     setIsLoading(true);
     try {
       const token = await currentUser.getIdToken();
-      const response = await fetch('http://localhost:3000/api/export-inventory-pdf', {
+      const response = await fetch('https://boxbinapi-iv6wi.ondigitalocean.app/api/export-inventory-pdf', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
