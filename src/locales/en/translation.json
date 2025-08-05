@@ -1,4 +1,15 @@
 {
+  "messages": {
+    "loading": "Loading...",
+    "loadingAccount": "Loading your account...",
+    "loadingPlans": "Loading plans...",
+    "processing": "Processing...",
+    "updating": "Updating...",
+    "redirecting": "Redirecting...",
+    "pleaseWait": "Please wait...",
+    "notFound": "The requested item could not be found.",
+    "templateSelection": "Choose from our collection of professional label templates"
+  },
   "auth": {
     "signInTitle": "Sign in to your account",
     "signInSubtitle": "Choose your preferred sign-in method",
@@ -102,7 +113,13 @@
     "next": "Next",
     "showing": "Showing {{count}} {{type}}"
   },
-   "shareAccess": {
+   "export": {
+    "title": "Export Inventory",
+    "description": "Download a PDF report of your complete inventory.",
+    "exportButton": "Export to PDF",
+    "exporting": "Generating PDF..."
+  },
+  "shareAccess": {
     "title": "Share Access",
     "addNew": "Add New",
     "sharedWithMe": "Shared With Me",

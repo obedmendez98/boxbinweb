@@ -1,4 +1,15 @@
 {
+  "messages": {
+    "loading": "Cargando...",
+    "loadingAccount": "Cargando tu cuenta...",
+    "loadingPlans": "Cargando planes...",
+    "processing": "Procesando...",
+    "updating": "Actualizando...",
+    "redirecting": "Redirigiendo...",
+    "pleaseWait": "Por favor espera...",
+    "notFound": "El elemento solicitado no pudo ser encontrado.",
+    "templateSelection": "Elige de nuestra colección de plantillas de etiquetas profesionales"
+  },
   "auth": {
     "signInTitle": "Inicia sesión en tu cuenta",
     "signInSubtitle": "Elige tu método de inicio de sesión preferido",
@@ -102,7 +113,13 @@
     "next": "Siguiente",
     "showing": "Mostrando {{count}} {{type}}"
   },
-   "shareAccess": {
+   "export": {
+    "title": "Exportar Inventario",
+    "description": "Descargue un informe PDF de su inventario completo.",
+    "exportButton": "Exportar a PDF",
+    "exporting": "Generando PDF..."
+  },
+  "shareAccess": {
     "title": "Compartir Acceso",
     "addNew": "Agregar Nuevo",
     "sharedWithMe": "Compartido Conmigo",

@@ -31,7 +31,10 @@ interface RouteState {
   templates?: Template[];
 }
 
+import { useTranslation } from 'react-i18next';
+
 export const TemplatesView = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const { currentUser } = useAuth();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -85,7 +88,7 @@ export const TemplatesView = () => {
     {/* Header Section */}
     <div className="mb-8">
       <h1 className="text-3xl font-bold text-gray-900">Templates</h1>
-      <p className="text-gray-600 mt-2">Choose from our collection of professional label templates</p>
+      <p className="text-gray-600 mt-2">{t('messages.templateSelection')}</p>
     </div>
 
     {/* Error State */}

@@ -18,7 +18,10 @@ const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 const planIcons = [Zap, Star, Crown, Sparkles];
 
+import { useTranslation } from 'react-i18next';
+
 export default function BillingPage() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [subscription, setSubscription] = useState<Record<
     string,
@@ -113,7 +116,7 @@ export default function BillingPage() {
               }}
             ></div>
           </div>
-          <p className="text-gray-600 font-medium">Loading your account...</p>
+          <p className="text-gray-600 font-medium">{t('messages.loadingAccount')}</p>
         </div>
       </div>
     );
@@ -207,7 +210,7 @@ export default function BillingPage() {
             <div className="flex justify-center items-center h-64">
               <div className="text-center">
                 <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600 font-medium">Loading plans...</p>
+                <p className="text-gray-600 font-medium">{t('messages.loadingPlans')}</p>
               </div>
             </div>
           ) : error ? (

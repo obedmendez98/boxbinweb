@@ -15,6 +15,7 @@ import SocialScreen from '@/pages/dashboard/SocialScreen';
 import ActiveSubscriptionPage from '@/pages/billing/ActiveSubscriptionPage';
 import { TemplatesView } from '@/pages/smart-labels/components/TemplatesView';
 import LoginByToken from '@/pages/auth/login-by-token';
+import ExportInventory from '@/pages/dashboard/ExportInventory';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -188,8 +189,14 @@ const router = createBrowserRouter([
             </ProtectedRoute>
         ),
     },
-
-    
+    {
+        path: '/export-inventory',
+        element: (
+            <ProtectedRoute>
+                <ExportInventory />
+            </ProtectedRoute>
+        ),
+    },
 ]);
 
 export default function Routes() {
