@@ -50,8 +50,8 @@ import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "./CheckoutForm";
 import { loadStripe } from "@stripe/stripe-js";
 import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripe";
-const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 export default function ActiveSubscriptionPage() {
   const { currentUser } = useAuth();
@@ -146,9 +146,10 @@ export default function ActiveSubscriptionPage() {
   };
 
   const handleUpgradeToPlan = async (newPriceId: string) => {
+    console.log(subscription, " j j ");
     if (
       !subscription?.stripeSubscriptionId &&
-      subscription.plan === "Trial" &&
+      subscription.plan === "Free Trial" &&
       subscription.status === "active"
     ){
       setSelectedPlan(newPriceId);
@@ -197,6 +198,9 @@ export default function ActiveSubscriptionPage() {
           console.log(sub, " sun");
           if (sub.planId) {
             const stripePlan = await getStripePlanById(sub.planId);
+            if(!stripePlan){
+              return;
+            }
 
             console.log(stripePlan);
             const fullSubscription = {
@@ -209,7 +213,7 @@ export default function ActiveSubscriptionPage() {
 
             setSubscription(fullSubscription);
           } else {
-            setSubscription(sub);
+            //setSubscription(sub);
           }
         } else {
           console.log("❌ No se encontró suscripción para el usuario.");
@@ -395,7 +399,7 @@ export default function ActiveSubscriptionPage() {
       <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
         <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] flex flex-col">
           {/* Header compacto y fijo */}
-          <DialogHeader className="text-center space-y-2 pb-4 flex-shrink-0 border-b border-gray-100">
+          <DialogHeader className="text-center space-y-2 pb-2 flex-shrink-0 border-b border-gray-100">
             <DialogTitle className="text-2xl font-bold text-gray-900">
               Upgrade Your Plan
             </DialogTitle>
@@ -406,7 +410,7 @@ export default function ActiveSubscriptionPage() {
 
           {/* Contenido scrolleable */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-6">
+            <div className="p-3">
               {plansLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="relative mb-4">
@@ -419,7 +423,7 @@ export default function ActiveSubscriptionPage() {
                   <p className="text-gray-600 text-sm">Please wait...</p>
                 </div>
               ) : plansError ? (
-                <div className="text-center py-8">
+                <div className="text-center py-6">
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Crown className="w-8 h-8 text-red-500" />
                   </div>
