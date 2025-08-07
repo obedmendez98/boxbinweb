@@ -136,5 +136,12 @@
     "shared2": "Comparte tu inventario con otros usuarios",
     "user": "Usuario o Email",
     "pro": "Procesando..."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "Lo sentimos, la página que buscas no existe o ha sido movida. Verifica la URL o regresa al inicio.",
+    "goHome": "Ir al inicio",
+    "goBack": "Volver atrás",
+    "systemStatus": "Sistema funcionando correctamente"
   }
 }
