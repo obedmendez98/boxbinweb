@@ -151,12 +151,12 @@ export default function ActiveSubscriptionPage() {
       !subscription?.stripeSubscriptionId &&
       subscription.plan === "Free Trial" &&
       subscription.status === "active"
-    ){
+    ) {
       setSelectedPlan(newPriceId);
       setCanUpgrade(true);
       return;
     }
-    
+
     if (!subscription?.stripeSubscriptionId || !currentUser?.uid) return;
 
     try {
@@ -198,7 +198,7 @@ export default function ActiveSubscriptionPage() {
           console.log(sub, " sun");
           if (sub.planId) {
             const stripePlan = await getStripePlanById(sub.planId);
-            if(!stripePlan){
+            if (!stripePlan) {
               return;
             }
 
@@ -250,7 +250,7 @@ export default function ActiveSubscriptionPage() {
     );
   }
 
-  return (
+ return (
     <div className="min-h-screen bg-gray-50 p-4">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
@@ -471,207 +471,242 @@ export default function ActiveSubscriptionPage() {
                         : "md:grid-cols-3"
                     }`}
                   >
-                    {plans.map((plan: any) => (
-                      <div key={plan.id} className="relative">
-                        {/* Badge de popular más pequeño */}
-                        {plan.popular && (
-                          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
-                            <div className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
-                              <Star className="w-3 h-3 mr-1" />
-                              Popular
-                            </div>
-                          </div>
-                        )}
-
-                        <Card
-                          className={`
-                          relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1 border-2 h-full
-                          ${
-                            plan.popular
-                              ? "border-gradient-to-r from-orange-400 to-pink-500 shadow-md"
-                              : "border-gray-200 hover:border-indigo-300"
-                          }
-                        `}
-                        >
-                          {/* Efecto de gradiente sutil para plan popular */}
+                    {plans.map((plan: any) => {
+                      const isSelected = selectedPlan === plan.id;
+                      
+                      return (
+                        <div key={plan.id} className="relative">
+                          {/* Badge de popular más pequeño */}
                           {plan.popular && (
-                            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-pink-50 opacity-30"></div>
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+                              <div className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
+                                <Star className="w-3 h-3 mr-1" />
+                                Popular
+                              </div>
+                            </div>
                           )}
 
-                          <CardHeader className="text-center pb-3 relative z-10">
-                            {/* Icono más pequeño */}
-                            <div
-                              className={`
-                              w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center
-                              ${
-                                plan.popular
-                                  ? "bg-gradient-to-br from-orange-400 to-pink-500"
-                                  : "bg-gradient-to-br from-indigo-500 to-purple-600"
-                              }
-                            `}
-                            >
-                              <Crown className="w-5 h-5 text-white" />
-                            </div>
+                          <Card
+                            className={`
+                            relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1 border-2 h-full cursor-pointer
+                            ${
+                              isSelected
+                                ? "border-indigo-500 bg-indigo-50 shadow-lg scale-105"
+                                : plan.popular
+                                ? "border-gradient-to-r from-orange-400 to-pink-500 shadow-md"
+                                : "border-gray-200 hover:border-indigo-300"
+                            }
+                          `}
+                            onClick={() => setSelectedPlan(plan.id)}
+                          >
+                            {/* Efecto de gradiente sutil para plan popular */}
+                            {plan.popular && !isSelected && (
+                              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-pink-50 opacity-30"></div>
+                            )}
+                            
+                            {/* Efecto de gradiente para plan seleccionado */}
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-50"></div>
+                            )}
 
-                            <CardTitle className="text-lg font-bold text-gray-900 mb-1">
-                              {plan.product?.name || "Premium Plan"}
-                            </CardTitle>
-
-                            {/* Precio más compacto */}
-                            <div className="mb-2">
+                            <CardHeader className="text-center pb-3 relative z-10">
+                              {/* Icono más pequeño */}
                               <div
                                 className={`
-                                text-2xl font-bold mb-0
+                                w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center
                                 ${
-                                  plan.popular
-                                    ? "bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent"
-                                    : "text-indigo-600"
+                                  isSelected
+                                    ? "bg-gradient-to-br from-indigo-500 to-purple-600"
+                                    : plan.popular
+                                    ? "bg-gradient-to-br from-orange-400 to-pink-500"
+                                    : "bg-gradient-to-br from-indigo-500 to-purple-600"
                                 }
                               `}
                               >
-                                ${((plan.unit_amount || 0) / 100).toFixed(2)}
+                                <Crown className="w-5 h-5 text-white" />
                               </div>
-                              <div className="text-gray-600 text-sm">
-                                per {plan.recurring?.interval || "month"}
+
+                              <CardTitle className="text-lg font-bold text-gray-900 mb-1">
+                                {plan.product?.name || "Premium Plan"}
+                                {isSelected && (
+                                  <span className="ml-2 text-indigo-600">✓</span>
+                                )}
+                              </CardTitle>
+
+                              {/* Precio más compacto */}
+                              <div className="mb-2">
+                                <div
+                                  className={`
+                                  text-2xl font-bold mb-0
+                                  ${
+                                    isSelected
+                                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                                      : plan.popular
+                                      ? "bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent"
+                                      : "text-indigo-600"
+                                  }
+                                `}
+                                >
+                                  ${((plan.unit_amount || 0) / 100).toFixed(2)}
+                                </div>
+                                <div className="text-gray-600 text-sm">
+                                  per {plan.recurring?.interval || "month"}
+                                </div>
                               </div>
-                            </div>
 
-                            {plan.product?.description && (
-                              <p className="text-gray-600 text-xs leading-tight line-clamp-2">
-                                {plan.product.description}
-                              </p>
-                            )}
-                          </CardHeader>
+                              {plan.product?.description && (
+                                <p className="text-gray-600 text-xs leading-tight line-clamp-2">
+                                  {plan.product.description}
+                                </p>
+                              )}
+                            </CardHeader>
 
-                          <CardContent className="space-y-3 relative z-10 flex-1 flex flex-col h-full px-4 pb-4">
-                            {/* Features más compactas */}
-                            <div className="space-y-2 flex-grow">
-                              {plan.metadata?.bins && (
-                                <div className="flex items-center text-sm">
-                                  <div
-                                    className={`
-                                    w-4 h-4 rounded-full flex items-center justify-center mr-2
-                                    ${
-                                      plan.popular
-                                        ? "bg-orange-100"
-                                        : "bg-green-100"
-                                    }
-                                  `}
-                                  >
-                                    <Package
-                                      className={`w-3 h-3 ${
-                                        plan.popular
-                                          ? "text-orange-500"
-                                          : "text-green-500"
-                                      }`}
-                                    />
+                            <CardContent className="space-y-3 relative z-10 flex-1 flex flex-col h-full px-4 pb-4">
+                              {/* Features más compactas */}
+                              <div className="space-y-2 flex-grow">
+                                {plan.metadata?.bins && (
+                                  <div className="flex items-center text-sm">
+                                    <div
+                                      className={`
+                                      w-4 h-4 rounded-full flex items-center justify-center mr-2
+                                      ${
+                                        isSelected
+                                          ? "bg-indigo-100"
+                                          : plan.popular
+                                          ? "bg-orange-100"
+                                          : "bg-green-100"
+                                      }
+                                    `}
+                                    >
+                                      <Package
+                                        className={`w-3 h-3 ${
+                                          isSelected
+                                            ? "text-indigo-500"
+                                            : plan.popular
+                                            ? "text-orange-500"
+                                            : "text-green-500"
+                                        }`}
+                                      />
+                                    </div>
+                                    <span className="font-medium text-gray-800 truncate">
+                                      {plan.metadata.bins} bins
+                                    </span>
                                   </div>
-                                  <span className="font-medium text-gray-800 truncate">
-                                    {plan.metadata.bins} bins
-                                  </span>
-                                </div>
-                              )}
+                                )}
 
-                              {plan.metadata?.items && (
-                                <div className="flex items-center text-sm">
-                                  <div
-                                    className={`
-                                    w-4 h-4 rounded-full flex items-center justify-center mr-2
-                                    ${
-                                      plan.popular
-                                        ? "bg-orange-100"
-                                        : "bg-green-100"
-                                    }
-                                  `}
-                                  >
-                                    <Zap
-                                      className={`w-3 h-3 ${
-                                        plan.popular
-                                          ? "text-orange-500"
-                                          : "text-green-500"
-                                      }`}
-                                    />
+                                {plan.metadata?.items && (
+                                  <div className="flex items-center text-sm">
+                                    <div
+                                      className={`
+                                      w-4 h-4 rounded-full flex items-center justify-center mr-2
+                                      ${
+                                        isSelected
+                                          ? "bg-indigo-100"
+                                          : plan.popular
+                                          ? "bg-orange-100"
+                                          : "bg-green-100"
+                                      }
+                                    `}
+                                    >
+                                      <Zap
+                                        className={`w-3 h-3 ${
+                                          isSelected
+                                            ? "text-indigo-500"
+                                            : plan.popular
+                                            ? "text-orange-500"
+                                            : "text-green-500"
+                                        }`}
+                                      />
+                                    </div>
+                                    <span className="font-medium text-gray-800 truncate">
+                                      {plan.metadata.items} items
+                                    </span>
                                   </div>
-                                  <span className="font-medium text-gray-800 truncate">
-                                    {plan.metadata.items} items
-                                  </span>
-                                </div>
-                              )}
+                                )}
 
-                              {plan.metadata?.locations && (
-                                <div className="flex items-center text-sm">
-                                  <div
-                                    className={`
-                                    w-4 h-4 rounded-full flex items-center justify-center mr-2
-                                    ${
-                                      plan.popular
-                                        ? "bg-orange-100"
-                                        : "bg-green-100"
-                                    }
-                                  `}
-                                  >
-                                    <MapPin
-                                      className={`w-3 h-3 ${
-                                        plan.popular
-                                          ? "text-orange-500"
-                                          : "text-green-500"
-                                      }`}
-                                    />
+                                {plan.metadata?.locations && (
+                                  <div className="flex items-center text-sm">
+                                    <div
+                                      className={`
+                                      w-4 h-4 rounded-full flex items-center justify-center mr-2
+                                      ${
+                                        isSelected
+                                          ? "bg-indigo-100"
+                                          : plan.popular
+                                          ? "bg-orange-100"
+                                          : "bg-green-100"
+                                      }
+                                    `}
+                                    >
+                                      <MapPin
+                                        className={`w-3 h-3 ${
+                                          isSelected
+                                            ? "text-indigo-500"
+                                            : plan.popular
+                                            ? "text-orange-500"
+                                            : "text-green-500"
+                                        }`}
+                                      />
+                                    </div>
+                                    <span className="font-medium text-gray-800 truncate">
+                                      {plan.metadata.locations} locations
+                                    </span>
                                   </div>
-                                  <span className="font-medium text-gray-800 truncate">
-                                    {plan.metadata.locations} locations
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                                )}
+                              </div>
 
-                            {/* Botón más compacto */}
-                            <Button
-                              onClick={() => handleUpgradeToPlan(plan.id)}
-                              disabled={upgradingToPlan === plan.id}
-                              size="sm"
-                              className={`
-                                w-full font-semibold transition-all duration-200 relative overflow-hidden
-                                ${
-                                  plan.popular
-                                    ? "bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg"
-                                    : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white hover:shadow-md"
-                                }
-                                ${
-                                  upgradingToPlan === plan.id
-                                    ? "animate-pulse"
-                                    : ""
-                                }
-                              `}
-                            >
-                              {upgradingToPlan === plan.id ? (
-                                <div className="flex items-center justify-center space-x-2">
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span className="text-sm">Processing...</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center justify-center space-x-2">
-                                  <Crown className="w-4 h-4" />
-                                  <span className="text-sm">Upgrade Now</span>
-                                </div>
-                              )}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
+                              {/* Botón más compacto */}
+                              <Button
+                                onClick={() => handleUpgradeToPlan(plan.id)}
+                                disabled={upgradingToPlan === plan.id}
+                                size="sm"
+                                className={`
+                                  w-full font-semibold transition-all duration-200 relative overflow-hidden
+                                  ${
+                                    isSelected
+                                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl"
+                                      : plan.popular
+                                      ? "bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg"
+                                      : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white hover:shadow-md"
+                                  }
+                                  ${
+                                    upgradingToPlan === plan.id
+                                      ? "animate-pulse"
+                                      : ""
+                                  }
+                                `}
+                              >
+                                {upgradingToPlan === plan.id ? (
+                                  <div className="flex items-center justify-center space-x-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span className="text-sm">Processing...</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center space-x-2">
+                                    <Crown className="w-4 h-4" />
+                                    <span className="text-sm">
+                                      {isSelected ? "Selected Plan" : "Upgrade Now"}
+                                    </span>
+                                  </div>
+                                )}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  {
-                              canUpgrade && (
-                                <Elements stripe={stripePromise}>
-                                  <CheckoutForm
-                                    userId={currentUser?.uid}
-                                    planId={selectedPlan}
-                                  />
-                                </Elements>
-                              )
-                            }
+                  {canUpgrade && (
+                    <Elements stripe={stripePromise}>
+                      <CheckoutForm
+                        userId={currentUser?.uid}
+                        planId={selectedPlan}
+                        currency="usd"
+                        originalPrice={plans.find((p: any) => p.id === selectedPlan)?.unit_amount || 0}
+                      />
+                    </Elements>
+                  )}
                 </div>
               )}
             </div>

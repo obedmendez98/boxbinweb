@@ -446,6 +446,8 @@ export default function BillingPage() {
                     <CheckoutForm
                       userId={currentUser?.uid}
                       planId={selectedPlan}
+                      currency="usd"
+                      originalPrice={plans.find((p) => p.id === selectedPlan)?.unit_amount || 0}
                     />
                   </Elements>
                 )}
