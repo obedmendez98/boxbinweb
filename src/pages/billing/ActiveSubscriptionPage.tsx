@@ -497,7 +497,10 @@ export default function ActiveSubscriptionPage() {
                                 : "border-gray-200 hover:border-indigo-300"
                             }
                           `}
-                            onClick={() => setSelectedPlan(plan.id)}
+                            onClick={() => {
+                              setSelectedPlan(plan.id);
+                              handleUpgradeToPlan(plan.id);
+                            }}
                           >
                             {/* Efecto de gradiente sutil para plan popular */}
                             {plan.popular && !isSelected && (
