@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import FileQrCodes from "@/assets/fileqrcodes.png";
 
 interface Template {
   id: string;
@@ -64,7 +65,7 @@ export const TemplatesView = () => {
             labelsPerPage: template.labelsPerPage,
             gridLayout: template.gridLayout,
             dimensions: template.dimensions,
-            previewUrl: `https://boxbinapi-iv6wi.ondigitalocean.app/api/templates/${template.id}/preview`,
+            previewUrl: FileQrCodes,
           }))
         );
       } catch (error) {

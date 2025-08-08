@@ -449,9 +449,9 @@ export const SmartLabelsPage = () => {
                           <div className="font-medium text-gray-900">
                             QR Code: {label.qrcodeId}
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">
+                          {/* <div className="text-sm text-gray-600 mt-1">
                             Field: {label.field}
-                          </div>
+                          </div> */}
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-gray-500 mb-2">
@@ -495,9 +495,9 @@ export const SmartLabelsPage = () => {
                         <div className="font-medium text-gray-900 truncate">
                           QR Code: {label.qrcodeId}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1 truncate">
+                        {/* <div className="text-sm text-gray-600 mt-1 truncate">
                           Field: {label.field}
-                        </div>
+                        </div> */}
                         <div className="text-xs text-gray-500 mt-3">
                           {new Date(label.dateCreated).toLocaleDateString()}
                         </div>
