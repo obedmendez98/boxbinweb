@@ -64,7 +64,7 @@ export const TemplatesView = () => {
             labelsPerPage: template.labelsPerPage,
             gridLayout: template.gridLayout,
             dimensions: template.dimensions,
-            previewUrl: `https://boxbinapi-iv6wi.ondigitalocean.app/api/templates/${template.id}/preview`,
+            previewUrl: `/src/assets/fileqrcodes.png`,
           }))
         );
       } catch (error) {
