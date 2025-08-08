@@ -418,6 +418,7 @@ export default function BillingPage() {
                             planId: selectedPlan,
                             status: "active",
                             createdAt: new Date().toISOString(),
+                            userEmail: currentUser?.email,
                           });
 
                           if ((window as any).ReactNativeWebView) {
