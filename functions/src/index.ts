@@ -7,7 +7,7 @@ import { logger } from "firebase-functions";
 admin.initializeApp();
 
 const stripe = new Stripe(
-  "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",
+  "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",
   {
     apiVersion: "2025-06-30.basil",
   }

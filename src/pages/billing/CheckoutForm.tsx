@@ -6,12 +6,25 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { createStripeSubscription } from '@/lib/stripe';
+import { createStripeSubscriptionCupons } from '@/lib/stripe';
 
 type CheckoutFormProps = {
   userId: string | undefined;
   planId: string;
 };
+
+interface CouponValidation {
+  valid: boolean;
+  coupon?: {
+    id: string;
+    percent_off?: number;
+    amount_off?: number;
+    currency?: string;
+    name?: string;
+    duration: string;
+  };
+  error?: string;
+}
 
 export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
   const stripe = useStripe();
@@ -26,6 +39,59 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [nameOnCard, setNameOnCard] = useState('');
+  
+  // Estados para cupones
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  // Función para validar cupón usando Firebase Functions
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Por favor ingresa un código de cupón');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError(null);
+
+    try {
+      // Importar y usar Firebase Functions
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      const validateCouponFunction = httpsCallable(functions, 'validateCoupon');
+
+      const result = await validateCouponFunction({ 
+        couponCode: couponCode.trim(),
+        planId,
+        userId 
+      });
+
+      const data = result.data as CouponValidation;
+
+      if (data.valid && data.coupon) {
+        setAppliedCoupon(data);
+        setCouponError(null);
+      } else {
+        setCouponError(data.error || 'Cupón inválido');
+        setAppliedCoupon(null);
+      }
+    } catch (err: any) {
+      console.error('Error validating coupon:', err);
+      setCouponError(err.message || 'Error al validar el cupón');
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Función para remover cupón
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError(null);
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -63,11 +129,12 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
       const userEmail = currentUser?.email;
       const userName = currentUser?.displayName;
 
-      // Create Stripe subscription
-      const { subscriptionId, customerId } = await createStripeSubscription(
+      // Create Stripe subscription with coupon using your local function
+      const { subscriptionId, customerId, appliedCoupon: finalAppliedCoupon } = await createStripeSubscriptionCupons(
         paymentMethod.id,
         planId,
-        undefined,
+        appliedCoupon?.coupon?.id, // Pasar el ID del cupón como tercer parámetro
+        undefined, // customerId
         userEmail || undefined,
         userName || undefined,
         currentUser?.uid ?? "",
@@ -98,6 +165,7 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         paymentMethod: paymentMethod.id,
         stripeSubscriptionId: subscriptionId,
         stripeCustomerId: customerId,
+        couponUsed: finalAppliedCoupon || appliedCoupon?.coupon || null,
         billingDetails: {
           firstName,
           lastName,
@@ -118,9 +186,6 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
       } else {
         window.location.href = '/home';
       }
-
-      // Redirect to dashboard after successful payment
-      //window.location.href = '/home';
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
@@ -131,6 +196,7 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Campos de información personal */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
@@ -202,12 +268,74 @@ export default function CheckoutForm({ userId, planId }: CheckoutFormProps) {
         />
       </div>
 
+      {/* Sección de cupones */}
+      <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+        <Label className="text-base font-semibold">Código de descuento</Label>
+        
+        {!appliedCoupon ? (
+          <div className="flex gap-2">
+            <Input
+              placeholder="Ingresa tu código de cupón"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={validateCoupon}
+              disabled={couponLoading || !couponCode.trim()}
+            >
+              {couponLoading ? 'Validando...' : 'Aplicar'}
+            </Button>
+          </div>
+        ) : (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-medium text-green-800">
+                  ✅ Cupón aplicado: {appliedCoupon.coupon?.name || couponCode}
+                </p>
+                <p className="text-sm text-green-600">
+                  Descuento: {
+                    appliedCoupon.coupon?.percent_off 
+                      ? `${appliedCoupon.coupon.percent_off}%`
+                      : appliedCoupon.coupon?.amount_off 
+                        ? `$${(appliedCoupon.coupon.amount_off / 100).toFixed(2)} ${appliedCoupon.coupon.currency?.toUpperCase()}`
+                        : 'Aplicado'
+                  }
+                </p>
+                <p className="text-xs text-gray-600">
+                  Duración: {appliedCoupon.coupon?.duration === 'once' ? 'Una vez' : 
+                             appliedCoupon.coupon?.duration === 'forever' ? 'Para siempre' : 
+                             'Duración limitada'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={removeCoupon}
+                className="text-red-600 hover:text-red-800"
+              >
+                Remover
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {couponError && (
+          <p className="text-red-500 text-sm">❌ {couponError}</p>
+        )}
+      </div>
+
       <div className="space-y-2">
         <Label>Card Information</Label>
         <CardElement className="p-3 border rounded-md" />
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
+      
       <Button type="submit" className="w-full" disabled={!stripe || loading}>
         {loading ? 'Processing...' : 'Subscribe'}
       </Button>
