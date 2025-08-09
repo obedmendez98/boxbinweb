@@ -40,6 +40,7 @@ import {
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -447,6 +448,32 @@ const BinDetailsScreen: React.FC = () => {
 
   const handleUpdateBin = async () => {
     // aquí va tu lógica de update en Firestore…
+  };
+
+  const deleteItem = async (itemId: string, imageUrl: string | undefined) => {
+    try {
+      await deleteDoc(doc(db, 'items', itemId));
+  
+      if (imageUrl) {
+        const path = extractStoragePath(imageUrl);
+        
+        if (path) {
+            const storage = getStorage();
+            const storageRef = ref(storage, path);
+          await deleteObject(storageRef);
+          console.log('Archivo eliminado');
+        } else {
+          console.warn('No se pudo extraer un path válido de la URL');
+        }
+      }
+  
+      // Update the local state
+      setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      alert( 'Item deleted successfully');
+    } catch (error) {
+      console.error('Error deleting item:', error);
+     alert( 'Failed to delete item');
+    }
   };
 
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
@@ -919,7 +946,7 @@ const BinDetailsScreen: React.FC = () => {
                                 <AlertDialogCancel className="rounded-xl border-slate-300 hover:bg-slate-50">
                                   Cancel
                                 </AlertDialogCancel>
-                                <AlertDialogAction className="bg-red-600 hover:bg-red-700 rounded-xl">
+                                <AlertDialogAction onClick={() => { deleteItem(item.id, item.imageUrl) }} className="bg-red-600 hover:bg-red-700 rounded-xl">
                                   Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -1298,25 +1325,9 @@ const BinDetailsScreen: React.FC = () => {
               </Label>
               {!selectedLocation ? (
                 <>
-                  {/*
-                <Button 
-                  variant="outline" 
-                  onClick={() => {}}
-                  className="rounded-xl border-slate-300 hover:bg-slate-50"
-                >
-                  + Add Location
-                </Button>
-                */}
                 </>
               ) : (
                 <div className="flex items-center space-x-3">
-                  {/*<Button 
-                    variant="outline" 
-                    onClick={() => {}}
-                    className="rounded-xl border-slate-300 hover:bg-slate-50"
-                  >
-                    Change Location
-                  </Button>*/}
                   <div className="inline-flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-full border border-blue-200">
                     <MapPin className="w-4 h-4 text-blue-600" />
                     <span className="text-sm text-blue-700 font-medium">
