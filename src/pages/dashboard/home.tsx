@@ -786,13 +786,13 @@ export default function HomeScreen() {
               )}
             </div>
 
-            {stats.totalBins <= Number(subscription?.metadata?.locations) && (
+            {activeTab === 'bins' && stats.totalBins <= Number(subscription?.metadata?.locations) && (
               <button
                 onClick={() => setIsAddBinModalOpen(true)}
                 className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
               >
                 <Plus size={20} />
-                <span>Add New Bin</span>
+                <span>Add New Container</span>
               </button>
             )}
           </div>
@@ -879,7 +879,7 @@ export default function HomeScreen() {
                   </p>
                   {!searchTextLocations && (
                     <Button
-                      onClick={() => navigate("/add-location")}
+                      onClick={() => navigate("/locations")}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -939,6 +939,7 @@ export default function HomeScreen() {
         isOpen={isAddBinModalOpen}
         onClose={() => setIsAddBinModalOpen(false)}
         onSubmit={handleAddBin}
+        userId={effectiveUserId}
       />
 
       <ModalMessage
