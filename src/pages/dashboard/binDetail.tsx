@@ -174,6 +174,68 @@ const BinDetailsScreen: React.FC = () => {
 
   const [error, setError] = useState("");
 
+
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+
+  const handleBulkUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    // Control de límites (opcional)
+    const limit = Number(subscription?.metadata?.items) || 100;
+    if (files.length > limit) {
+      alert(`You can upload up to ${limit} items at once.`);
+      return;
+    }
+
+    setIsBulkUploading(true);
+    setBulkProgress({ done: 0, total: files.length });
+
+    const storage = getStorage();
+    const newItems: Item[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const file = files[i];
+        // Aquí podrías agregar redimensionamiento con una librería web si quieres
+
+        // Subir a Firebase Storage
+        const filename = `bins/${id}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, filename);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+
+        // Crear item minimalista en Firestore
+        const itemName = `${bin?.name}_${String(i + 1).padStart(3, "0")}`;
+        const itemData = {
+          name: itemName,
+          description: "",
+          cuantity: "0",
+          value: "0",
+          tags: [],
+          createdAt: new Date().toISOString(),
+          binId: id,
+          userId: "",
+          imageUrl: url,
+        };
+
+        const docRef = await addDoc(collection(db, "items"), itemData);
+        newItems.push({ id: docRef.id, ...itemData, binId: id! });
+      } catch (err) {
+        console.error("Error uploading file index", i, err);
+        // Puedes decidir mostrar error o continuar
+      } finally {
+        setBulkProgress((p) => ({ ...p, done: p.done + 1 }));
+      }
+    }
+
+    setItems((prev) => [...prev, ...newItems]);
+    setIsBulkUploading(false);
+    setIsBulkUploadOpen(false);
+    //alert(`Bulk upload complete: ${newItems.length} items created.`);
+  };
+
   useEffect(() => {
     console.log(error);
     const fetchData = async () => {
@@ -209,7 +271,7 @@ const BinDetailsScreen: React.FC = () => {
         setItems(itemsData);
       } catch (err) {
         console.error("Error fetching bin data:", err);
-        setError("Error fetching bin data");
+        setError("Error fetching container data");
       } finally {
         setLoading(false);
       }
@@ -527,7 +589,7 @@ const BinDetailsScreen: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600">Loading bin details...</p>
+          <p className="text-gray-600">Loading container details...</p>
         </div>
       </div>
     );
@@ -539,7 +601,7 @@ const BinDetailsScreen: React.FC = () => {
         <div className="text-center space-y-4">
           <Package className="h-16 w-16 text-gray-400 mx-auto" />
           <h2 className="text-xl font-semibold text-gray-900">Container not found</h2>
-          <p className="text-gray-600">The requested bin could not be found.</p>
+          <p className="text-gray-600">The requested container could not be found.</p>
           <Button onClick={() => navigate("/")} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go Back
@@ -855,8 +917,8 @@ const BinDetailsScreen: React.FC = () => {
                     Delete Container
                   </AlertDialogTitle>
                   <AlertDialogDescription className="text-slate-600">
-                    Are you sure you want to delete this bin? This action cannot
-                    be undone and will also delete all items in this bin.
+                    Are you sure you want to delete this container? This action cannot
+                    be undone and will also delete all items in this container.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -869,6 +931,64 @@ const BinDetailsScreen: React.FC = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {/* Bulk Upload Dialog */}
+      <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+        <DialogTrigger asChild>
+          <Button className="flex-1 sm:flex-none rounded-xl bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-200">
+            <Plus className="h-4 w-4 mr-2" />
+            Bulk Upload
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="pb-6">
+            <DialogTitle className="text-2xl font-bold text-slate-900">
+              Bulk Upload Items
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <label className="block text-sm font-medium text-slate-700">
+              Select images (multiple)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={isBulkUploading}
+              onChange={(e) => handleBulkUpload(e.target.files)}
+              className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+            />
+
+            {isBulkUploading && (
+              <div>
+                <div className="w-full bg-gray-200 rounded-full h-4">
+                  <div
+                    className="bg-green-600 h-4 rounded-full transition-all"
+                    style={{
+                      width: `${(bulkProgress.done / bulkProgress.total) * 100}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-center text-sm text-gray-700">
+                  Uploading {bulkProgress.done} of {bulkProgress.total}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3 pt-6">
+              <Button
+                variant="outline"
+                onClick={() => setIsBulkUploadOpen(false)}
+                className="rounded-xl border-slate-300 hover:bg-slate-50"
+                disabled={isBulkUploading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
           </div>
 
           {/* Items Section */}
@@ -889,7 +1009,7 @@ const BinDetailsScreen: React.FC = () => {
                     No items yet
                   </h4>
                   <p className="text-slate-500 mb-6 max-w-md mx-auto">
-                    Add your first item to get started organizing your bin
+                    Add your first item to get started organizing your container
                   </p>
                   <Button
                     onClick={() => setIsAddItemOpen(true)}
@@ -1316,7 +1436,7 @@ const BinDetailsScreen: React.FC = () => {
                 id="binName"
                 value={binName}
                 onChange={(e) => setBinName(e.target.value)}
-                placeholder="Enter bin name"
+                placeholder="Enter container name"
                 className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
               />
             </div>
@@ -1333,7 +1453,7 @@ const BinDetailsScreen: React.FC = () => {
                 id="binDescription"
                 value={binDescription}
                 onChange={(e) => setBinDescription(e.target.value)}
-                placeholder="Enter bin description"
+                placeholder="Enter container description"
                 rows={3}
                 className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
               />
@@ -1351,7 +1471,7 @@ const BinDetailsScreen: React.FC = () => {
                 id="binAddress"
                 value={binAddress}
                 onChange={(e) => setBinAddress(e.target.value)}
-                placeholder="Enter bin address"
+                placeholder="Enter container address"
                 className="rounded-xl border-slate-300 focus:border-blue-400 focus:ring-blue-400"
               />
             </div>
