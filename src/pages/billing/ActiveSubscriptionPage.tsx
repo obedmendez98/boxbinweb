@@ -50,6 +50,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "./CheckoutForm";
 import { loadStripe } from "@stripe/stripe-js";
 import { STRIPE_PUBLISHABLE_KEY } from "@/config/stripe";
+import { ModalMessage, type ModalType } from "@/components/layout/ModalMessage";
 
 const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
@@ -59,6 +60,21 @@ export default function ActiveSubscriptionPage() {
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: ModalType;
+    message: string;
+    title?: string;
+  }>({
+    isOpen: false,
+    type: "info",
+    message: "",
+  });
+
+  const closeModal = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
@@ -103,7 +119,11 @@ export default function ActiveSubscriptionPage() {
       window.location.reload();
     } catch (error) {
       console.error("Error cancelling subscription:", error);
-      alert("Failed to cancel subscription");
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Failed to cancel subscription",
+      });
     } finally {
       setRedirecting(false);
     }
@@ -250,7 +270,7 @@ export default function ActiveSubscriptionPage() {
     );
   }
 
- return (
+  return (
     <div className="min-h-screen bg-gray-50 p-4">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
@@ -473,7 +493,7 @@ export default function ActiveSubscriptionPage() {
                   >
                     {plans.map((plan: any) => {
                       const isSelected = selectedPlan === plan.id;
-                      
+
                       return (
                         <div key={plan.id} className="relative">
                           {/* Badge de popular más pequeño */}
@@ -506,7 +526,7 @@ export default function ActiveSubscriptionPage() {
                             {plan.popular && !isSelected && (
                               <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-pink-50 opacity-30"></div>
                             )}
-                            
+
                             {/* Efecto de gradiente para plan seleccionado */}
                             {isSelected && (
                               <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-50"></div>
@@ -532,7 +552,9 @@ export default function ActiveSubscriptionPage() {
                               <CardTitle className="text-lg font-bold text-gray-900 mb-1">
                                 {plan.product?.name || "Premium Plan"}
                                 {isSelected && (
-                                  <span className="ml-2 text-indigo-600">✓</span>
+                                  <span className="ml-2 text-indigo-600">
+                                    ✓
+                                  </span>
                                 )}
                               </CardTitle>
 
@@ -682,13 +704,17 @@ export default function ActiveSubscriptionPage() {
                                 {upgradingToPlan === plan.id ? (
                                   <div className="flex items-center justify-center space-x-2">
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span className="text-sm">Processing...</span>
+                                    <span className="text-sm">
+                                      Processing...
+                                    </span>
                                   </div>
                                 ) : (
                                   <div className="flex items-center justify-center space-x-2">
                                     <Crown className="w-4 h-4" />
                                     <span className="text-sm">
-                                      {isSelected ? "Selected Plan" : "Upgrade Now"}
+                                      {isSelected
+                                        ? "Selected Plan"
+                                        : "Upgrade Now"}
                                     </span>
                                   </div>
                                 )}
@@ -706,7 +732,10 @@ export default function ActiveSubscriptionPage() {
                         userId={currentUser?.uid}
                         planId={selectedPlan}
                         currency="usd"
-                        originalPrice={plans.find((p: any) => p.id === selectedPlan)?.unit_amount || 0}
+                        originalPrice={
+                          plans.find((p: any) => p.id === selectedPlan)
+                            ?.unit_amount || 0
+                        }
                       />
                     </Elements>
                   )}
@@ -716,6 +745,14 @@ export default function ActiveSubscriptionPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ModalMessage
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        message={modalState.message}
+        title={modalState.title}
+      />
     </div>
   );
 }

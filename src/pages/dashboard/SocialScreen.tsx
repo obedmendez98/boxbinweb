@@ -1,3 +1,4 @@
+import { ModalMessage, type ModalType } from "@/components/layout/ModalMessage";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,21 @@ export default function SocialScreen() {
   const navigate = useNavigate();
 
   const { currentUser } = useAuth();
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: ModalType;
+    message: string;
+    title?: string;
+  }>({
+    isOpen: false,
+    type: "info",
+    message: "",
+  });
+
+  const closeModal = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
 
   const [sharedAccounts, setSharedAccounts] = useState<any>([]);
   const [sharedByMeAccounts, setSharedByMeAccounts] = useState([]);
@@ -118,7 +134,11 @@ export default function SocialScreen() {
 
   const handleShare = async () => {
     if (!username.trim()) {
-      alert(t("social.errors.emptyUsername"));
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: t("social.errors.emptyUsername"),
+      });
       return;
     }
 
@@ -135,7 +155,12 @@ export default function SocialScreen() {
       const userSnapshot = await getDocs(userQuery);
 
       if (userSnapshot.empty) {
-        alert(t("social.errors.userNotFound"));
+        setModalState({
+          isOpen: true,
+          type: "error",
+          message: t("social.errors.userNotFound"),
+        });
+
         setIsProcessing(false);
         setUsername("");
         setIsModalVisible(false);
@@ -154,7 +179,11 @@ export default function SocialScreen() {
       );
 
       if (!existingAccess.empty) {
-        alert(t("social.alreadyShared.message"));
+        setModalState({
+          isOpen: true,
+          type: "error",
+          message: t("social.alreadyShared.message"),
+        });
         setIsProcessing(false);
         return;
       }
@@ -168,10 +197,18 @@ export default function SocialScreen() {
 
       setUsername("");
       setIsModalVisible(false);
-      alert(t("social.success.message"));
+      setModalState({
+        isOpen: true,
+        type: "success",
+        message: t("social.success.message"),
+      });
     } catch (error) {
       console.error("Error granting access:", error);
-      alert(t("social.errors.grantFailed"));
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: t("social.errors.grantFailed"),
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -194,7 +231,11 @@ export default function SocialScreen() {
         await deleteDoc(doc(db, "shared_access", accountId));
       } catch (error) {
         console.error("Error revoking access:", error);
-        alert(t("social.errors.revokeFailed"));
+        setModalState({
+          isOpen: true,
+          type: "error",
+          message: t("social.errors.revokeFailed"),
+        });
       }
     }
   };
@@ -467,6 +508,14 @@ export default function SocialScreen() {
           </div>
         </div>
       )}
+<ModalMessage
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        message={modalState.message}
+        title={modalState.title}
+      />
+
     </div>
   );
 }

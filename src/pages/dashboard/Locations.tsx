@@ -58,9 +58,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { useTranslation } from "react-i18next";
 import { getStripePlanById } from "@/lib/stripe";
+import { ModalMessage, type ModalType } from "@/components/layout/ModalMessage";
 
 export const LocationsManager = () => {
   const { t } = useTranslation();
@@ -75,11 +76,7 @@ export const LocationsManager = () => {
   const [itemName, setItemName] = useState("");
   const [itemAddress, setItemAddress] = useState("");
   const [itemDescription, setItemDescription] = useState("");
-  const [showAlert, setShowAlert] = useState({
-    show: false,
-    type: "",
-    message: "",
-  });
+
   const [editingId, setEditingId] = useState<any>(null);
 
   // Estados de paginación
@@ -96,6 +93,21 @@ export const LocationsManager = () => {
   );
   const effectiveUserId = userImpersonated?.ownerUserId || currentUser?.uid;
 
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: ModalType;
+    message: string;
+    title?: string;
+  }>({
+    isOpen: false,
+    type: "info",
+    message: "",
+  });
+
+  const closeModal = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
+  
   // Estados para navegación de páginas
   const [pageSnapshots, setPageSnapshots] = useState(new Map());
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -145,15 +157,6 @@ export const LocationsManager = () => {
   const clearImpersonation = () => {
     localStorage.removeItem("impersonatedUser");
     setUserImpersonated(null);
-  };
-
-  // Función para mostrar alertas
-  const showAlertMessage = (type: any, message: any) => {
-    setShowAlert({ show: true, type, message });
-    setTimeout(
-      () => setShowAlert({ show: false, type: "", message: "" }),
-      4000
-    );
   };
 
   // Función para obtener el total de ubicaciones
@@ -236,7 +239,11 @@ export const LocationsManager = () => {
       }
     } catch (error) {
       console.error("Error loading locations:", error);
-      showAlertMessage("error", "Error loading the locations");
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Error loading the locations",
+      });
     } finally {
       setPageLoading(false);
     }
@@ -260,10 +267,11 @@ export const LocationsManager = () => {
     if (!itemName.trim() || !currentUser) return;
     // Verificar si ya alcanzó el límite
     if (totalLocations >= Number(subscription?.metadata?.locations)) {
-      showAlertMessage(
-        "error",
-        `You have reached the limit of ${subscription?.metadata?.locations} locations for your plan.`
-      );
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: `You have reached the limit of ${subscription?.metadata?.locations} locations for your plan.`,
+      });
       return;
     }
 
@@ -285,14 +293,22 @@ export const LocationsManager = () => {
       setItemDescription("");
       setIsModalVisible(false);
 
-      showAlertMessage("success", "Location created successfully");
+      setModalState({
+        isOpen: true,
+        type: "success",
+        message: "Location created successfully",
+      });
 
       // Recargar datos
       await loadLocations(1, true);
       await getTotalLocations();
     } catch (error) {
       console.error("Error creating location:", error);
-      showAlertMessage("error", "Error creating the location");
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Error creating the location",
+      });
     } finally {
       setOperationLoading(false);
     }
@@ -325,13 +341,21 @@ export const LocationsManager = () => {
       setEditingId(null);
       setSelectedLocation(null);
 
-      showAlertMessage("success", "Location updated successfully");
+      setModalState({
+        isOpen: true,
+        type: "success",
+        message: "Location updated successfully",
+      });
 
       // Recargar datos
       await loadLocations(currentPage);
     } catch (error) {
       console.error("Error updating location:", error);
-      showAlertMessage("error", "Error updating the location");
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Error updating the location",
+      });
     } finally {
       setOperationLoading(false);
     }
@@ -348,13 +372,21 @@ export const LocationsManager = () => {
       await deleteDoc(doc(db, "locations", locationId));
 
       setSelectedLocation(null);
-      showAlertMessage("success", "Location deleted successfully");
+      setModalState({
+        isOpen: true,
+        type: "success",
+        message: "Location deleted successfully",
+      });
       // Recargar datos
       await loadLocations(currentPage);
       await getTotalLocations();
     } catch (error) {
       console.error("Error deleting location:", error);
-      showAlertMessage("error", "Error deleting the location");
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Error deleting the location",
+      });
     } finally {
       setOperationLoading(false);
     }
@@ -452,7 +484,7 @@ export const LocationsManager = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Floating alert */}
-      {showAlert.show && (
+      {/*showAlert.show && (
         <Alert
           className={`fixed top-4 right-4 z-50 max-w-md shadow-lg border-l-4 ${
             showAlert.type === "error"
@@ -477,7 +509,7 @@ export const LocationsManager = () => {
             </AlertDescription>
           </div>
         </Alert>
-      )}
+      )*/}
 
       {/* Impersonation Header */}
       {userImpersonated && (
@@ -949,6 +981,14 @@ export const LocationsManager = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+       <ModalMessage
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        message={modalState.message}
+        title={modalState.title}
+      />
     </div>
   );
 };

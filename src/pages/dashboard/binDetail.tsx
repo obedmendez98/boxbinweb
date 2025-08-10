@@ -59,6 +59,7 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { getStripePlanById } from "@/lib/stripe";
+import { ModalMessage, type ModalType } from "@/components/layout/ModalMessage";
 
 export const uploadImage = async (file: File): Promise<string> => {
   const storage = getStorage();
@@ -124,6 +125,21 @@ const BinDetailsScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: ModalType;
+    message: string;
+    title?: string;
+  }>({
+    isOpen: false,
+    type: "info",
+    message: "",
+  });
+
+  const closeModal = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // States
   const [bin, setBin] = useState<BinDetails | null>(null);
@@ -228,16 +244,21 @@ const BinDetailsScreen: React.FC = () => {
 
   const handleUpdateItem = async () => {
     if (!itemName.trim()) {
-      alert("Please enter an item name");
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Please enter an item name",
+      });
       return;
     }
 
-    //setIsUploading(true);
-
     try {
       if (!currentItem) {
-        alert("No item selected");
-        //setIsUploading(false);
+        setModalState({
+          isOpen: true,
+          type: "error",
+          message: "No item selected",
+        });
         return;
       }
 
@@ -294,10 +315,18 @@ const BinDetailsScreen: React.FC = () => {
       resetItemForm();
       setIsEditItemOpen(false);
 
-      alert("Item updated successfully");
+      setModalState({
+        isOpen: true,
+        type: "success",
+        message: "Item updated successfully",
+      });
     } catch (error) {
       console.error("Error updating item", error);
-      alert("Failed to update item");
+      setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Failed to update item",
+      });
     } finally {
       //setIsUploading(false);
     }
@@ -469,10 +498,20 @@ const BinDetailsScreen: React.FC = () => {
   
       // Update the local state
       setItems(prevItems => prevItems.filter(item => item.id !== itemId));
-      alert( 'Item deleted successfully');
+      //toast.success( 'Item deleted successfully');
+      setModalState({
+        isOpen: true,
+        type: "success",
+        message: "Item deleted successfully",
+      });
     } catch (error) {
       console.error('Error deleting item:', error);
-     alert( 'Failed to delete item');
+     //toast.error( 'Failed to delete item');
+     setModalState({
+        isOpen: true,
+        type: "error",
+        message: "Failed to delete item",
+      });
     }
   };
 
@@ -1365,6 +1404,14 @@ const BinDetailsScreen: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ModalMessage
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        message={modalState.message}
+        title={modalState.title}
+      />
     </div>
   );
 };
