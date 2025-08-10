@@ -875,7 +875,7 @@ export default function HomeScreen() {
                   <p className="text-gray-600 mb-6 max-w-sm mx-auto">
                     {searchTextLocations
                       ? t("locations.emptySearchHint")
-                      : t("locations.emptyHint")}
+                      : t("locations.hintEmpty")}
                   </p>
                   {!searchTextLocations && (
                     <Button
