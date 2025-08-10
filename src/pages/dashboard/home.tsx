@@ -608,7 +608,7 @@ export default function HomeScreen() {
       const docRef = await addDoc(collection(db, "bins"), newBin);
       console.log("Bin created with ID:", docRef.id);
 
-      openModal("success", "Bin created successfully!", "");
+      openModal("success", "Container created successfully!", "");
 
       await fetchBins();
     } catch (error: any) {

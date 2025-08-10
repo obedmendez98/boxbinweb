@@ -187,7 +187,7 @@ const BinDetailsScreen: React.FC = () => {
         const binSnap = await getDoc(binDocRef);
 
         if (!binSnap.exists()) {
-          setError("Bin not found");
+          setError("Container not found");
           setLoading(false);
           return;
         }
@@ -538,7 +538,7 @@ const BinDetailsScreen: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <Package className="h-16 w-16 text-gray-400 mx-auto" />
-          <h2 className="text-xl font-semibold text-gray-900">Bin not found</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Container not found</h2>
           <p className="text-gray-600">The requested bin could not be found.</p>
           <Button onClick={() => navigate("/")} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -566,10 +566,10 @@ const BinDetailsScreen: React.FC = () => {
               </Button>
               <div>
                 <h1 className="text-xl font-semibold text-slate-900">
-                  Bin Details
+                  Container Details
                 </h1>
                 <p className="text-xs text-slate-500">
-                  Manage your storage bin
+                  Manage your storage Container
                 </p>
               </div>
             </div>
@@ -846,13 +846,13 @@ const BinDetailsScreen: React.FC = () => {
                   className="flex-1 sm:flex-none rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Bin
+                  Delete Container
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
                 <AlertDialogHeader>
                   <AlertDialogTitle className="text-xl font-bold text-slate-900">
-                    Delete Bin
+                    Delete Container
                   </AlertDialogTitle>
                   <AlertDialogDescription className="text-slate-600">
                     Are you sure you want to delete this bin? This action cannot
@@ -1300,7 +1300,7 @@ const BinDetailsScreen: React.FC = () => {
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border-0 shadow-2xl">
           <DialogHeader className="pb-6">
             <DialogTitle className="text-2xl font-bold text-slate-900">
-              Edit Bin
+              Edit Container
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
@@ -1397,7 +1397,7 @@ const BinDetailsScreen: React.FC = () => {
                     <span>Updating...</span>
                   </span>
                 ) : (
-                  "Update Bin"
+                  "Update Container"
                 )}
               </Button>
             </div>

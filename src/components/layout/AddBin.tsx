@@ -41,15 +41,15 @@ export const AddBinModal: React.FC<AddBinModalProps> = ({
   // Mock translation function - replace with your i18n solution
   const t = (key: string): string => {
     const translations: Record<string, string> = {
-      "addBin.nameLabel": "Bin Name",
-      "addBin.namePlaceholder": "Enter bin name",
+      "addBin.nameLabel": "Container Name",
+      "addBin.namePlaceholder": "Enter Container name",
       "addBin.descriptionLabel": "Description",
       "addBin.descriptionPlaceholder": "Enter description",
       "addBin.addLocation": "Add Location",
       "addBin.optional": "optional",
       "addBin.locationLabel": "Location",
       "addBin.creating": "Creating...",
-      "addBin.create": "Create Bin",
+      "addBin.create": "Create Container",
     };
     return translations[key] || key;
   };
@@ -127,7 +127,7 @@ export const AddBinModal: React.FC<AddBinModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
-            {showLocationSelector ? "Select Location" : "Add New Bin"}
+            {showLocationSelector ? "Select Location" : "Add New Container"}
           </h2>
           <button
             onClick={handleClose}
